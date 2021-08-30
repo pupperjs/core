@@ -1,0 +1,8 @@
+.item.card.col-12.col-xl-6(data-id={{ item.id }})
+    img.card-img-top(src={- item.thumbnail -}, crossorigin="auto")
+
+    .card-header
+        .row.justify-content-between.align-items-center
+            .col-auto.d-flex.align-items-center
+                h5.mb-0.d-inline-block={{ item.title }}
+                p.description={- item.description -}
