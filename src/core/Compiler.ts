@@ -2,8 +2,10 @@ import pug from "pug";
 import fs from "fs";
 import path from "path";
 import Renderer from "./Renderer";
-import Lexer from "./compiler/Lexer";
+import PupperLexer from "./Lexer";
 import Parser from "./compiler/Parser";
+
+import PugLexer from "./compiler/Lexer";
 
 export namespace Compiler {
     export interface Options {
@@ -27,12 +29,22 @@ export default class PupperCompiler {
      * @returns
      */
     public compileSync(file: string, options: Compiler.Options = {}): Renderer {
-        return this.compile(fs.readFileSync(file, "utf8"), {
+        /*return this.compile(fs.readFileSync(file, "utf8"), {
+            ...options,
             pug: {
                 basedir: path.dirname(file),
                 filename: file,
             }
-        });
+        });*/
+
+        const lexer = new PupperLexer(fs.readFileSync(file, "utf8"), options);
+
+        lexer.start();
+
+        console.log(lexer);
+
+        // @ts-ignore
+        return lexer.toString();
     }
 
     public compile(template: string, options: Compiler.Options = {}): Renderer {
@@ -47,7 +59,7 @@ export default class PupperCompiler {
                     self: true,
                     // @ts-ignore
                     plugins: [{
-                        lex: new Lexer(),
+                        lex: new PugLexer(),
                         preParse: parser.preParse.bind(this)
                     }],
                     ...options.pug || {}
@@ -65,7 +77,7 @@ export default class PupperCompiler {
      * @returns 
      */
     public compileToString(template: string, options: Compiler.Options = {}): string {
-        const parser = new Parser();
+        /*const parser = new Parser();
 
         try {
             const rendered =  pug.compileClient(template, {
@@ -75,18 +87,25 @@ export default class PupperCompiler {
                 self: true,
                 // @ts-ignore
                 plugins: [{
-                    lex: new Lexer(),
+                    lex: new PugLexer(),
                     preParse: parser.preParse.bind(this)
                 }],
                 ...options.pug || {}
             });
 
-            return /*javascript*/`
+            return javascript`
                 ${rendered}
                 module.exports = pupper;
             `;
         } catch(e) {
             throw (options.debug ? e : new Error("Failed to compile template:" + e.message));
-        }
+        }*/
+
+        const lexer = new PupperLexer(template, options);
+
+        lexer.start();
+
+        // @ts-ignore
+        return lexer.toString();
     }
 }

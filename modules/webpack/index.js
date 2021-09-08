@@ -4,7 +4,7 @@
  * @license AGPL-3.0
  */
 
-const pupper = require("../../types");
+const pupper = require("../..");
 
 /**
  * @param {string} source The source filename
