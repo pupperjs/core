@@ -1,5 +1,32 @@
 import Lexer from "./Lexer";
 
+import { LexTokenType } from "pug-lexer";
+
+export interface PugToken {
+    type: LexTokenType,
+    loc?: Record<string, any>,
+    val?: string,
+    name?: string,
+    mustEscape?: boolean
+}
+
+export interface PugBlock {
+    type: "Block",
+    nodes: PugNode[]
+}
+
+export interface PugNode extends Record<string, any> {
+    type: string,
+    start: number,
+    end: number,
+    block?: PugBlock,
+    attributes?: {
+        name: string,
+        value: string,
+        mustEscape: boolean
+    }[]
+}
+
 export default class Parser {
     /**
      * Called before starts parsing
@@ -7,41 +34,21 @@ export default class Parser {
      * @param exp The expression to be checked against
      * @returns 
      */
-    public preParse(tokens: {
-        type: string,
-        loc: Record<string, any>,
-        val?: string,
-        name?: string,
-        mustEscape?: boolean
-    }[]) {
-        tokens = tokens.map((token, index) => {
-            // We want only attribute and code tokens
-            if (token.type !== "attribute" && token.type !== "code") {
-                return token;
-            }
-
-            // Check if it's a reactive item
-            if (token.mustEscape && Lexer.REACTIVE_REGEX.test(token.val)) {
-                // Extract the token value
-                const result = token.val.match(Lexer.REACTIVE_REGEX).groups;
-                const value = result.exp.replace(/\"/g, "\\\"");
-
-                const fn = result.tag === "{" ? "escape" : "literal";
-
-                if (token.type === "attribute") {
-                    // Replace with our escape
-                    token.val = `"@pupperjs:${fn}(${value})"`;
-                    token.mustEscape = false;
-                } else {
-                    // Replace it with a comment tag
-                    token.val = `"<!-- @pupperjs:${fn}(${value}) -->"`;
-                    token.mustEscape = false;
-                }
-            }
-
-            return token;
-        });
+    public preParse(tokens: PugToken[]) {
+        Lexer.LexerRegexes.forEach((token) => {
+            const t = new token();
+            tokens = t.lex(tokens);
+        });       
 
         return tokens;
+    }
+
+    public postParse(block: PugBlock) {
+        Lexer.LexerRegexes.forEach((token) => {
+            const t = new token();
+            block.nodes = t.parse(block.nodes);
+        }); 
+
+        return block;
     }
 }

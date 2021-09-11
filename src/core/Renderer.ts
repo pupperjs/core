@@ -1,80 +1,66 @@
 import type pug from "pug";
 import deepGetSet from "deep-get-set";
-import observableSlim, { ObservableChange } from "observable-slim";
+import observableSlim from "observable-slim";
+import Reactor from "./renderer/Reactor";
+import { Reactive } from "./renderer/Reactive";
 
-export namespace Renderer {
-    export type ReactiveData = Record<string, any>;
-    export type ReactiveTarget = "text" | "html" | "attribute";
-    export type ReactiveCommand = "escape" | "literal";
+const debug = require("debug")("pupperjs:renderer");
+
+export interface NodeOptions {
+    /**
+     * Any prefix to be passed to the dot notation
+     */
+    pathPrefix?: string,
+
+    /**
+     * Any additional context indexes to search for values
+     */
+    context?: Record<string, any>
+}
+
+export enum NodePreparationResult {
+    SKIP_CHILD,
+    SUCCESS,
+    FAILED
 }
 
 export default class PupperRenderer {
-    private static SYNTAX_REGEX = /(?: +)?\@pupperjs\:(?<command>.+)\((?<property>(?:[\w+]|\.| )+?)\)(?: +)?/;
-
-    private template: pug.compileTemplate;
-    public data: ProxyHandler<Renderer.ReactiveData> = {};
-    private dom: HTMLDivElement;
+    private static SYNTAX_REGEX = /(?: +)?\@p\:(?<command>.+)\((?<property>.+?)\)(?: +)?/;
 
     /**
-     * A list of reactive properties with their respective elements
+     * The pug compiled template function
      */
-    private reactive: Record<string, {
-        element: (HTMLElement | Element | Node),
-        target: Renderer.ReactiveTarget,
-        command: Renderer.ReactiveCommand,
-        key?: string
-    }[]> = {};
+    private template: pug.compileTemplate;
 
-    constructor(template: pug.compileTemplate, data?: Renderer.ReactiveData) {
+    /**
+     * The reactive data
+     */
+    public data: ProxyHandler<Reactive.ReactiveData> = {};
+
+    /**
+     * The DOM element that will receive all children
+     */
+    private dom: HTMLElement;
+
+    /**
+     * The reactor for this renderer
+     */
+    public reactor: Reactor;
+
+    /**
+     * Creates a new renderer instance
+     * @param template The pug compiled template function
+     * @param data The data that will be used for reactivity
+     */
+    constructor(template: pug.compileTemplate, data?: Reactive.ReactiveData) {
         this.template = template;
+
+        // Create the reactor
+        this.reactor = new Reactor(this);
 
         if (data) {
             this.setData(data);
         }
-    }
-
-    /**
-     * When a data property has changed
-     * @param changes The observed changes
-     */
-    onPropertyChange(changes: ObservableChange[]) {
-        changes.forEach((change) => {
-            // Check if has any handler registered for the given property
-            if (this.reactive[change.currentPath] !== undefined) {
-                // Trigger all of them
-                this.reactive[change.currentPath].forEach((reactive) => {
-                    console.log(reactive);
-
-                    switch(reactive.target) {
-                        // If it's targeting the text content
-                        case "text":
-                            reactive.element.textContent = change.newValue;
-                        break;
-
-                        // If it's targeting the HTML content
-                        case "html":
-                            (reactive.element as HTMLElement).innerHTML = change.newValue;
-                        break;
-
-                        // If it's targeting an attribute
-                        case "attribute":
-                            (reactive.element as HTMLElement).setAttribute(reactive.key, change.newValue);
-                        break;
-                    }
-                });
-            }
-        });
-    }
-
-    private addReactive(element: HTMLElement | Element | Node, property: string, command: Renderer.ReactiveCommand, target: Renderer.ReactiveTarget, attribute?: string) {
-        this.reactive[property] = this.reactive[property] || [];
-
-        this.reactive[property].push({
-            element,
-            target,
-            command,
-            key: attribute
-        });
     }
 
     /**
@@ -92,22 +78,49 @@ export default class PupperRenderer {
              */
             pupper: class PupperHelper {
                 /**
+                 * 
+                 * @param key The path to the data to be retrieved
+                 * @param context Any additional contexts
+                 * @returns 
+                 */
+                static getValue(key: string, context?: Record<string, any>) {
+                    let value;
+
+                    // First, try from the context
+                    if (context !== undefined) {
+                        value = deepGetSet(context, key);
+                    }
+
+                    // Then try from the data itself
+                    if (value === undefined) {
+                        value = deepGetSet(self.getData(), key);
+                    }
+
+                    debug("retrieving value %s: %O", key, value);
+
+                    return value;
+                }
+
+                /**
                  * Retrieves an escaped value to be displayed
                  * @param key The path to the data to be escaped
                  * @returns 
                  */
-                static escape(key: string): string {
-                    const text = document.createTextNode(deepGetSet(self.getData(), key));
+                static escape(key: string, context?: Record<string, any>): string {
+                    const text = document.createTextNode(
+                        this.getValue(key, context)
+                    );
+
                     return text.textContent;
                 }
 
                 /**
                  * Retrieves a literal value to be displayed
-                 * @param key The path to the data to be escaped
+                 * @param key The path to the data to be retrieved
                  * @returns 
                  */
-                static literal<T>(key: string): T {
-                    return deepGetSet(self.getData(), key);
+                static literal<T>(key: string, context?: Record<string, any>): T {
+                    return this.getValue(key, context);
                 }
             }
         };
@@ -117,7 +130,7 @@ export default class PupperRenderer {
      * Retrieves the underlying pug template function
      * @returns 
      */
-    getTemplateFn() {
+    public getTemplateFn() {
         return this.template;
     }
 
@@ -125,15 +138,17 @@ export default class PupperRenderer {
      * Retrieves the template data
      * @returns 
      */
-    getData() {
+    public getData() {
         return this.data;
     }
 
     /**
-     * Replaces all the object data
+     * Replaces all the object data with new proxied data
      * @param data The new template data
+     * @returns The proxied data object
      */
-    setData(data: object) {
+    public setData<T extends object>(data: T): ProxyHandler<T> {
+        // Prepare the proxy
         const proxy = {
             get(target: Record<any, any>, key: string): any {
                 if (key == "isProxy") {
@@ -158,17 +173,19 @@ export default class PupperRenderer {
 
                 return target[key];
             },
-            set: this.onPropertyChange.bind(this)
+            set: this.reactor.onPropertyChange.bind(this.reactor)
         };
 
-        this.data = observableSlim.create(data, true, this.onPropertyChange.bind(this));
+        this.data = observableSlim.create(data, true, this.reactor.onPropertyChange.bind(this.reactor));
+
+        return this.data;
     }
 
     /**
-     * Retrieves the template "locals" variable context
+     * Retrieves the context that will be passed to the template "locals" variable
      * @returns 
      */
-    getTemplateContext() {
+    public getTemplateContext() {
         return {
             ...this.getHelpers(),
             ...this.getData()
@@ -179,7 +196,7 @@ export default class PupperRenderer {
      * Renders the template into a string
      * @returns 
      */
-    renderToString() {
+    public renderToString() {
         return this.template(this.getTemplateContext());
     }
 
@@ -187,102 +204,197 @@ export default class PupperRenderer {
      * Renders the template into a string
      * @returns 
      */
-    render() {
-        // Render the template
-        const rendered = this.renderToString();
-
+    public render() {
         // Convert into the final tag so we can parse it
-        this.dom = document.createElement("div");
-        this.dom.classList.add("pupper");
-        this.dom.innerHTML = rendered;
-
-        // Fix all children
-        this.prepareNodes(this.dom.childNodes);
+        const target = document.createElement("div");
+        target.classList.add("pupper");
+        
+        this.dom = this.renderTo(this.dom);
 
         return this.dom;
     }
 
     /**
-     * Parses a single @pupperjs syntax
-     * @param action The action / syntax to be parsed
+     * Renders the template into a target element
+     * @param target The target element
      * @returns 
      */
-    private parseAction(action: string) {
+    public renderTo(target: string | HTMLElement = document.body) {
+        // Render the template
+        const rendered = this.renderToString();
+
+        // Create a template tag and set the contents of the template to it
+        const template = document.createElement("template");
+        template.innerHTML = rendered;
+
+        // Prepare the nodes
+        this.prepareNodes(template.content.childNodes);
+
+        // Append it to the DOM itself
+        const targetEl: HTMLElement = target instanceof HTMLElement ? target : document.querySelector(target);
+        targetEl.appendChild(template.content);
+
+        this.dom = targetEl;
+
+        return this.dom;
+    }
+
+    /**
+     * Parses a single pupper syntax
+     * @param command The command / syntax to be parsed
+     * @param nodeOptions The node options that will be used for parsing
+     * @returns 
+     */
+    private parseCommand(command: string, nodeOptions: NodeOptions = {}) {
+        command = command.trim();
+
         // Parse it
-        const parsed = action.match(PupperRenderer.SYNTAX_REGEX);
+        const parsed = command.match(PupperRenderer.SYNTAX_REGEX);
         
         if (parsed === null) {
-            throw new Error("Failed to parse action \"" + action + "\"");
+            throw new Error("Failed to parse command \"" + command + "\"");
         }
 
-        const command: Renderer.ReactiveCommand = (parsed.groups.command as Renderer.ReactiveCommand);
+        const fn: Reactive.ReactiveCommand = (parsed.groups.command as Reactive.ReactiveCommand);
         const property = parsed.groups.property;
 
-        let content = property;
+        let value = property;
 
-        switch(command) {
+        switch(fn) {
             // If it's an escape call
             case "escape":
-                content = this.getHelpers().pupper.escape(property);
+                value = this.getEscapedValue(property, nodeOptions.context);
             break;
 
             // If it's a literal call
             case "literal":
-                content = this.getHelpers().pupper.literal(property);
+                value = this.getLiteralValue(property, nodeOptions.context);
             break;
         }
 
         return {
-            content,
-            command,
+            value,
+            command: fn,
             property
         };
     }
 
     /**
+     * Retrieves an HTML-escaped text value
+     * @param property The property to be retrieved
+     * @returns 
+     */
+    public getEscapedValue(property: string, context?: Record<string, any>) {
+        return this.getHelpers().pupper.escape(property, context);
+    }
+
+    /**
+     * Retrieves a literal value (as-is, without any treatment)
+     * @param property The property to be retrieved
+     * @returns 
+     */
+    public getLiteralValue<T>(property: string, context?: Record<string, any>): T {
+        return this.getHelpers().pupper.literal<T>(property, context);
+    }
+
+    /**
      * Prepares nodes to be reactive
      * @param nodes The node list to be prepared
+     * @param context The proxy context to the nodes; defaults to `this.data`
+     * @returns
      */
-    private prepareNodes(nodes: NodeListOf<ChildNode>) {
-        // Iterate over all children nodes
-        Array.prototype.forEach.call(nodes, (element: HTMLElement) => {
-            // If has children, fix the children too
-            if (element.hasChildNodes()) {
-                this.prepareNodes(element.childNodes);
+    public prepareNodes(nodes: NodeListOf<ChildNode>, options?: NodeOptions) {
+        for(let element of [...nodes]) {
+            const result = this.prepareNode(element as HTMLElement, options);
+
+            // Check if failed
+            if (result === NodePreparationResult.FAILED) {
+                // Stop parsing
+                return false;
             }
 
-            this.prepareNode(element);
-        });
+            // Check if doesn't want to skip the child items
+            if (result !== NodePreparationResult.SKIP_CHILD) {
+                // If has children, fix the children too
+                if (element.hasChildNodes()) {
+                    this.prepareNodes(element.childNodes, options);
+                }
+            }
+        }
+
+        return true;
     }
 
     /**
      * Prepares a single HTML element
      * @param element The element to be prepared
+     * @param context The proxy context to the node; defaults to `this.data`
+     * @returns The preparation result
      */
-    private prepareNode(element: HTMLElement | Element) {
+    private prepareNode(element: HTMLElement | Element, options: NodeOptions = {}): NodePreparationResult {
+        // Copy the default options
+        options = {
+            pathPrefix: "",
+            ...options
+        };
+
         // Check if it's a comment
         if (element instanceof Comment) {
             const comment = (element as Comment);
-            
+
             // Check if it's not a pupper comment
-            if (comment.textContent.indexOf("@pupperjs:") === -1) {
+            if (comment.textContent.indexOf("@p:") === -1) {
                 return;
             }
 
             // Parse it
-            const parsed = this.parseAction(comment.textContent);
-            const text = document.createTextNode(parsed.content || "");
+            const parsed = this.parseCommand(comment.textContent, options);
+            const text = document.createTextNode(parsed.value || "");
 
             // Replace with a text node
             element.replaceWith(text);
 
             // Set it as reactive
-            this.addReactive(text, parsed.property, parsed.command, "text");
-        } else {
+            this.reactor.addReactivity(text, options.pathPrefix + parsed.property, "text", {
+                command: parsed.command,
+                initialValue: parsed.value,
+                nodeOptions: options
+            });
+        } else
+        // Check if it's a foreach
+        if (element.tagName === "P:FOREACH") {
+            // Retrieve the foreach attributes
+            const array = element.getAttribute("array");
+            const variable = element.getAttribute("var");
+            const type = element.getAttribute("type");
+            const html = element.innerHTML;
+
+            const comment = document.createComment(" ");
+            element.replaceWith(comment);
+
+            /**
+             * @todo move this to a sub class to manage this better.
+             * For. God's. Sake.
+             */
+
+            // Add reactivity for it
+            this.reactor.addReactivity(comment, options.pathPrefix + array, "foreach", {
+                var: variable,
+                type: type,
+                innerHTML: html,
+                initialValue: this.getLiteralValue(array),
+                nodeOptions: options
+            });
+
+            // Skip children preparation
+            return NodePreparationResult.SKIP_CHILD;
+        } else
+        // Check if it's an HTML element
+        if (element instanceof HTMLElement) {
             // Iterate over all the attributes
             element.getAttributeNames().forEach((attr) => {
                 // Check if it doesn't start with our identifier
-                if (element.getAttribute(attr).indexOf("@pupperjs:") === -1) {
+                if (element.getAttribute(attr).indexOf("@p:") === -1) {
                     return;
                 }
 
@@ -290,31 +402,22 @@ export default class PupperRenderer {
                 const value = element.getAttribute(attr);
 
                 // Parse it
-                const parsed = this.parseAction(value);
+                const parsed = this.parseCommand(value, options);
 
                 if (!!parsed) {
                     element.removeAttribute(attr);
                 }
 
-                // Replace it
-                element.setAttribute(attr, parsed.content);
-
                 // Set it as reactive
-                this.addReactive(element, parsed.property, parsed.command, "attribute", attr);
+                this.reactor.addReactivity(element, options.pathPrefix + parsed.property, "attribute", {
+                    key: attr,
+                    command: parsed.command,
+                    initialValue: parsed.value,
+                    nodeOptions: options
+                });
             });
         }
+
+        return NodePreparationResult.SUCCESS;
     }    
-
-    /**
-     * Renders the template to an element
-     * @param element The element that will receive the children elements
-     * @returns 
-     */
-    renderTo(element: string | HTMLElement | Element = document.body) {
-        if (typeof element === "string") {
-            element = document.querySelector(element);
-        }
-
-        return element.append(this.render());
-    }
 }

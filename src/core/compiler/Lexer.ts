@@ -1,10 +1,13 @@
 import type PugLexer from "pug-lexer";
+import type Token from "./lexer/Token";
+import ForEach from "./lexer/tokens/ForEach";
+import Property from "./lexer/tokens/Property";
 
 export default class Lexer {
-    /**
-     * The regex to test if an expression is a valid reactive item
-     */
-    public static REACTIVE_REGEX = /\{(?<tag>\{|-) ?(?<exp>(?:[\w+]|\.)+) ?(\}|-)\}/;
+    public static LexerRegexes: typeof Token[] = [
+        Property,
+        ForEach
+    ];
 
     /**
      * Checks if a given expression is valid
@@ -13,7 +16,6 @@ export default class Lexer {
      * @returns 
      */
     public isExpression(lexer: PugLexer.Lexer, exp: string) {
-        const result = Lexer.REACTIVE_REGEX.test(exp);
-        return result;
+        return Lexer.LexerRegexes.some((token) => token.testExpression(exp));
     }
 }

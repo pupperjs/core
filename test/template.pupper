@@ -1,8 +1,34 @@
-.item.card.col-12.col-xl-6(data-id={{ item.id }})
-    img.card-img-top(src={- item.thumbnail -}, crossorigin="auto")
+//- Stylesheets
+link(href="https://getbootstrap.com/docs/4.0/dist/css/bootstrap.min.css", rel="stylesheet")
+link(href="https://getbootstrap.com/docs/4.0/examples/cover/cover.css", rel="stylesheet")
 
-    .card-header
-        .row.justify-content-between.align-items-center
-            .col-auto.d-flex.align-items-center
-                h5.mb-0.d-inline-block={{ item.title }}
-                p.description={- item.description -}
+.text-center
+    .cover-container.d-flex.h-100.p-3.mx-auto.flex-column
+        header.masthead.mb-auto 
+            .inner
+                h3.masthead-brand={{ page.title }}
+
+        //- Main contents
+        main.inner.cover(role="main")
+            h1.cover-heading={{ page.description }}
+
+            p.lead={{ page.lead }}
+
+            .row.mt-5.justify-content-around.align-items-center
+                //- Reactive puppies
+                foreach puppy of puppies
+                    .col-5.mb-5
+                        .puppy.card.px-0(data-id={{ puppy.id }}).text-dark
+                            img.card-img-top(src={- puppy.thumbnail -}, crossorigin="auto")
+
+                            .card-header
+                                h5.card-title={{ puppy.title }}
+                                small.text-muted|Served by pupper.js
+
+                            .card-body
+                                ={- puppy.description -}
+
+        footer.mastfoot.mt-auto
+            .inner
+                p
+                    |Cover template for <a href="https://getbootstrap.com/">Bootstrap</a>, by <a href="https://twitter.com/mdo">@mdo</a>

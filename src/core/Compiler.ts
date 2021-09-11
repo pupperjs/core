@@ -48,7 +48,8 @@ export default class PupperCompiler {
                     // @ts-ignore
                     plugins: [{
                         lex: new Lexer(),
-                        preParse: parser.preParse.bind(this)
+                        preParse: parser.preParse.bind(this),
+                        postParse: parser.postParse.bind(this)
                     }],
                     ...options.pug || {}
                 })
@@ -76,7 +77,8 @@ export default class PupperCompiler {
                 // @ts-ignore
                 plugins: [{
                     lex: new Lexer(),
-                    preParse: parser.preParse.bind(this)
+                    preParse: parser.preParse.bind(this),
+                    preLoad: parser.postParse.bind(this)
                 }],
                 ...options.pug || {}
             });
