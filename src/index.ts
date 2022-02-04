@@ -43,7 +43,7 @@ class PupperStatic {
      * @returns 
      */
     static compileFileSync(file: string, options?: Compiler.Options) {
-        return new PupperCompiler().compileSync(file, options);
+        return new PupperCompiler().compileFile(file, options);
     }
 }
 

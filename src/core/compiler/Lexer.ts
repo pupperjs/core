@@ -7,7 +7,7 @@ import Bind from "./lexer/tokens/Bind";
 import Import from "./lexer/tokens/Import";
 
 export default class Lexer {
-    public static LexerRegexes: typeof Token[] = [
+    public static Tokens: typeof Token[] = [
         Property,
         ForEach,
         IfToken,
@@ -22,6 +22,6 @@ export default class Lexer {
      * @returns 
      */
     public isExpression(lexer: PugLexer.Lexer, exp: string) {
-        return Lexer.LexerRegexes.some((token) => token.testExpression(exp));
+        return Lexer.Tokens.some((token) => token.testExpression(exp));
     }
 }

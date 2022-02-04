@@ -26,8 +26,6 @@ export enum NodePreparationResult {
     FAILED
 }
 
-type K = keyof HTMLElementEventMap;
-
 export class Renderer {
     private static SYNTAX_REGEX = /(?: +)?\@p\:(?<command>.+)\((?<property>.+?)\)(?: +)?/;
 
@@ -45,7 +43,7 @@ export class Renderer {
      * The methods to be attributed with the elements
      */
     // @ts-ignore
-    public methods: Record<string, (this: HTMLElement, ev: HTMLElementEventMap[K]) => any> = {};
+    public methods: Reactive.ReactiveMethods = {};
 
     /**
      * The DOM element that will receive all children
@@ -62,14 +60,21 @@ export class Renderer {
      * @param template The pug compiled template function
      * @param data The data that will be used for reactivity
      */
-    constructor(template: pug.compileTemplate, data?: Reactive.ReactiveData) {
+    constructor(template: pug.compileTemplate, settings?: {
+        data?: Reactive.ReactiveData,
+        methods?: Reactive.ReactiveMethods
+    }) {
         this.template = template;
 
         // Create the reactor
         this.reactor = new Reactor(this);
 
-        if (data) {
-            this.setData(data);
+        if (settings?.data) {
+            this.setData(settings.data);
+        }
+
+        if (settings?.methods) {
+            this.methods = settings.methods;
         }
     }
 

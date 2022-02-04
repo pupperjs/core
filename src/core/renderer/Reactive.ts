@@ -3,9 +3,14 @@ import type { NodeOptions } from "../Renderer";
 import type Reactor from "./Reactor";
 
 export namespace Reactive {
+    type K = keyof HTMLElementEventMap;
+
+    export type HTMLEventCallback = (this: HTMLElement, ev: HTMLElementEventMap[K]) => any;
+
     export type ReactiveData = Record<string, any>;
     export type ReactiveTarget = "text" | "html" | "attribute" | "foreach" | "if";
     export type ReactiveCommand = "escape" | "literal" | null;
+    export type ReactiveMethods = Record<string, HTMLEventCallback>;
 
     export type Context = (ProxyHandler<Reactive.ReactiveData> | Record<any, any>);
 

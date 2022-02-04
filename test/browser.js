@@ -1,7 +1,7 @@
 const { Component } = require("../out/core/Component");
 
 const pupper = new Component({
-    template: require("./template.pupper"),
+    template: require("./templates/template.pupper"),
     methods: {
         onClickPuppy(e) {
             alert("You clicked a puppy! :D");

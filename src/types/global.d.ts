@@ -1,11 +1,6 @@
-declare module "deep-get-set" {
-    export default function(object: object, key: any, value?: any);
-}
-
-declare module "*.pupper" {
-    export default function(data: object): string;
-}
-
+/**
+ * Because observable-slim is not documented
+ */
 declare module "observable-slim" {
     declare type ObservableChange = {
         type: "add" | "delete" | "update",

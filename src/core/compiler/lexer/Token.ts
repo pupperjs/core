@@ -1,7 +1,15 @@
-import { PugNode, PugToken } from "../Parser";
+import Plugin, { PugAST } from "../Plugin";
+
+import { PugToken, PugNode } from "pug";
 
 export default class Token {
     public static readonly REGEX: RegExp;
+
+    constructor(
+        protected parser: Plugin
+    ) {
+        
+    }
 
     /**
      * Tests if the token matches with the given expression
@@ -28,5 +36,23 @@ export default class Token {
      */
     public parse(nodes: PugNode[]) {
         return nodes;
+    }
+
+    /**
+     * Called before the AST is compiled into Javascript
+     * @param ast The pug AST to be compiled
+     * @returns 
+     */
+    public beforeCompile(ast: PugAST) {
+        return ast;
+    }
+
+    /**
+     * Called after the AST is compiled into Javascript
+     * @param code The generated Javascript code
+     * @returns 
+     */
+    public afterCompile(code: string) {
+        return code;
     }
 }

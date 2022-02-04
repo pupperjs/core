@@ -1,5 +1,6 @@
 import { Renderer } from "./Renderer";
 import type { CompiledTemplate } from "./Renderer";
+import { Reactive } from "./renderer/Reactive";
 
 export interface ComponentSettings {
     /**
@@ -15,7 +16,7 @@ export interface ComponentSettings {
     /**
      * The component methods
      */
-    methods?: Record<string, Function>;
+    methods?: Reactive.ReactiveMethods;
 }
 
 export class Component {
@@ -24,15 +25,28 @@ export class Component {
      */
     public renderer: Renderer;
 
-    public data: Record<any, any>;
-    public methods: Record<string, Function>;
-
     constructor(
         protected settings: ComponentSettings
     ) {
         this.renderer = new Renderer(this.settings.template, this.settings.data);
-        this.data = this.renderer.data;
-        this.methods = this.renderer.methods;
+        this.methods = settings.methods;
+        this.data = settings.data;
+    }
+
+    public get data() {
+        return this.renderer.data;
+    }
+
+    public set data(data: Record<any, any>) {
+        this.renderer.setData(data);
+    }
+
+    public get methods() {
+        return this.renderer.methods;
+    }
+
+    public set methods(methods: Reactive.ReactiveMethods) {
+        this.renderer.methods = methods;
     }
 
     /**

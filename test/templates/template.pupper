@@ -2,7 +2,7 @@
 link(href="https://getbootstrap.com/docs/4.0/dist/css/bootstrap.min.css", rel="stylesheet")
 link(href="https://getbootstrap.com/docs/4.0/examples/cover/cover.css", rel="stylesheet")
 
-//-import(Puppy from "./puppy.pupper")
+import(Puppy from "./puppy.pupper")
 
 .text-center
     .cover-container.d-flex.h-100.p-3.mx-auto.flex-column

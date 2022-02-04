@@ -1,4 +1,4 @@
-import { PugToken } from "../../Parser";
+import { PugToken } from "../../Plugin";
 import Token from "../Token";
 
 export default class Bind extends Token {

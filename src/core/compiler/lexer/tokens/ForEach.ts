@@ -1,4 +1,4 @@
-import { PugNode } from "../../Parser";
+import { PugNode } from "../../Plugin";
 import Token from "../Token";
 
 export default class ForEach extends Token {

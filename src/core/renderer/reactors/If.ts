@@ -6,7 +6,6 @@ export default class IfReactor extends Reactive.AbstractReactor {
     public static readonly Type: "if";
 
     public test(path: string) {
-        console.log(this.path, path);
         return super.test(path);
     }
 

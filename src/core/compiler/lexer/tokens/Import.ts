@@ -1,8 +1,13 @@
-import { PugNode } from "../../Parser";
+import { PugNode } from "../../Plugin";
 import Token from "../Token";
 
 export default class Import extends Token {
     private static readonly IMPORT_CONDITION = /import? (?<identifier>.+?) from \"?\'?(?<filename>.+)\"?\'?$/;
+
+    /**
+     * The imports that will later be putted into the template header
+     */
+    protected imports: Record<string, string> = {};
 
     public parse(nodes: PugNode[]) {
         for(let index = 0; index < nodes.length; index++) {
@@ -19,27 +24,39 @@ export default class Import extends Token {
 
                 const { identifier, filename } = condition.groups;
 
-                // Set the tag name
-                node.type = "Code";
+                this.imports[identifier] = filename;
 
-                // Setup the attributes for the foreach
-                node.block = {
-                    type: "Block",
-                    nodes: [
-                        {
-                            type: "Text",
-                            val: `const ${identifier} = require("${filename}");`
-                        }
-                    ]
-                };
-            }
-
-            // Parses the block
-            if (node.block) {
-                node.block.nodes = this.parse(node.block.nodes);
+                // Remove the node from it
+                nodes.splice(index, 1);
+            } else {
+                // Parses the block
+                if (node.block) {
+                    node.block.nodes = this.parse(node.block.nodes);
+                }
             }
         }
 
         return nodes;
+    }
+
+    public afterCompile(code: string) {
+        const importNames = Object.keys(this.imports);
+
+        // Check if has any import
+        if (importNames.length) {
+            // Prepare the import handler
+            let imports = `pupper.__imports = {`;
+
+            // Add all imports to it
+            imports += importNames.map((name) => {
+                return `"${name}": require("${this.imports[name]}")`;
+            }).join(",");
+            
+            imports += `};`
+
+            code += `\n\n${imports}\n`;
+        }
+
+        return code;
     }
 };
