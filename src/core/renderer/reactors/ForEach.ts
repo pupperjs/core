@@ -77,8 +77,9 @@ export default class ForEachReactor extends Reactive.AbstractReactor {
 
         // Check if it's array.length (pushing a new object into the array)
         if (path === this.path + ".length") {
-            path = this.path + "." + (newValue - 1);
-            this.addSingle(path, this.renderer.getLiteralValue(path));
+            path = String(newValue - 1);
+
+            this.addSingle(path, this.renderer.getLiteralValue(this.path + "." + path));
 
             return true;
         }

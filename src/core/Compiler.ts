@@ -1,7 +1,7 @@
 import pug from "pug";
 import fs from "fs";
 import path from "path";
-import Renderer from "./Renderer";
+import { Renderer } from "./Renderer";
 import Lexer from "./compiler/Lexer";
 import Parser from "./compiler/Parser";
 
@@ -42,6 +42,7 @@ export default class PupperCompiler {
             return new Renderer(
                 pug.compile(template, {
                     name: "pupper",
+                    filename: "pupper.pug",
                     compileDebug: options.debug || false,
                     // Always use self to prevent conflicts with other compilers
                     self: true,

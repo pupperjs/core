@@ -1,11 +1,23 @@
 import { Compiler } from "./core/Compiler";
 import PupperCompiler from "./core/Compiler";
-import PupperRenderer from "./core/Renderer";
+import { Renderer } from "./core/Renderer";
+import type { compileTemplate } from "pug";
+import { Reactive } from "./core/renderer/Reactive";
 
 class PupperStatic {
     static readonly Compiler = PupperCompiler;
-    static readonly Renderer = PupperRenderer;
+    static readonly Renderer = Renderer;
     static readonly Pupper = import("./pupper");
+
+    /**
+     * Creates a renderer instance
+     * @param template The compiled template function
+     * @param data The reactive data, optional
+     * @returns 
+     */
+    static createRenderer(template: compileTemplate, data?: Reactive.ReactiveData) {
+        return new Renderer(template, data);
+    }
 
     /**
      * Compiles a string

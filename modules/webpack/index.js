@@ -11,7 +11,13 @@ const pupper = require("../..");
  * @param {import("../../types/pupper").Compiler.Options} options Any options to be passed to the pupper compiler
  * @returns {String}
  */
-module.exports = (source, options) => {
-    const contents = pupper.compileToStringSync(source, options);
+module.exports = function(source, options) {
+    const contents = pupper.compileToStringSync(source, {
+        ...options,
+        pug: {
+            filename: this.resourcePath
+        }
+    });
+
     return contents;
 };

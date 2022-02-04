@@ -2,11 +2,17 @@ import type PugLexer from "pug-lexer";
 import type Token from "./lexer/Token";
 import ForEach from "./lexer/tokens/ForEach";
 import Property from "./lexer/tokens/Property";
+import IfToken from "./lexer/tokens/If";
+import Bind from "./lexer/tokens/Bind";
+import Import from "./lexer/tokens/Import";
 
 export default class Lexer {
     public static LexerRegexes: typeof Token[] = [
         Property,
-        ForEach
+        ForEach,
+        IfToken,
+        Bind,
+        Import
     ];
 
     /**

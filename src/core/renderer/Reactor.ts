@@ -1,4 +1,4 @@
-import type Renderer from "../Renderer";
+import type { Renderer } from "../Renderer";
 import { ObservableChange } from "observable-slim";
 import { Reactive } from "./Reactive";
 
@@ -6,6 +6,7 @@ import ForEachReactor from "./reactors/ForEach";
 import HTMLReactor from "./reactors/HTML";
 import HTMLAttributeReactor from "./reactors/HTMLAttribute";
 import TextReactor from "./reactors/Text";
+import IfReactor from "./reactors/If";
 
 const debug = require("debug")("pupperjs:renderer:reactor");
 
@@ -15,7 +16,8 @@ export default class Reactor {
         foreach: ForEachReactor,
         html: HTMLReactor,
         attribute: HTMLAttributeReactor,
-        text: TextReactor
+        text: TextReactor,
+        if: IfReactor
     };
 
     /**
@@ -83,7 +85,7 @@ export default class Reactor {
             return false;
         }
 
-        this.reactive.some((reactive) => {
+        const result = this.reactive.some((reactive) => {
             if (reactive.test(path)) {
                 debug("%s handled by %s", path, reactive.constructor.name);
 
@@ -94,6 +96,10 @@ export default class Reactor {
 
             return false;
         });
+
+        if (!result) {
+            debug("%s failed to be handled", path);
+        }
     }
 
     /**
@@ -121,5 +127,25 @@ export default class Reactor {
         if (options.initialValue !== undefined) {
             this.triggerChangeFor(property, options.initialValue);
         }
+    }
+
+    /**
+     * Binds an event to an element
+     * @param element The element that will receive the event
+     * @param event The event name
+     * @param method The event method name
+     * @returns 
+     */
+    public bindEvent(element: HTMLElement | Element | Node, event: string, method: string) {
+        const callback = this.renderer.methods[method];
+
+        if (callback === undefined) {
+            debug("method %s was not found when binding %s for %O", method, event, element);
+            return false;
+        }
+
+        element.addEventListener(event, callback);
+
+        return true;
     }
 }

@@ -17,12 +17,12 @@ export interface PugBlock {
 
 export interface PugNode extends Record<string, any> {
     type: string,
-    start: number,
-    end: number,
+    start?: number,
+    end?: number,
     block?: PugBlock,
-    attributes?: {
+    attrs?: {
         name: string,
-        value: string,
+        val: string,
         mustEscape: boolean
     }[]
 }

@@ -2,6 +2,8 @@
 link(href="https://getbootstrap.com/docs/4.0/dist/css/bootstrap.min.css", rel="stylesheet")
 link(href="https://getbootstrap.com/docs/4.0/examples/cover/cover.css", rel="stylesheet")
 
+//-import(Puppy from "./puppy.pupper")
+
 .text-center
     .cover-container.d-flex.h-100.p-3.mx-auto.flex-column
         header.masthead.mb-auto 
@@ -9,16 +11,16 @@ link(href="https://getbootstrap.com/docs/4.0/examples/cover/cover.css", rel="sty
                 h3.masthead-brand={{ page.title }}
 
         //- Main contents
-        main.inner.cover(role="main")
+        main.inner.cover.my-3(role="main")
             h1.cover-heading={{ page.description }}
 
             p.lead={{ page.lead }}
 
             .row.mt-5.justify-content-around.align-items-center
                 //- Reactive puppies
-                foreach puppy of puppies
+                foreach(puppy of puppies)
                     .col-5.mb-5
-                        .puppy.card.px-0(data-id={{ puppy.id }}).text-dark
+                        .puppy.card.px-0(data-id={{ puppy.id }}, style={ cursor: "pointer" }, @click="onClickPuppy").text-dark
                             img.card-img-top(src={- puppy.thumbnail -}, crossorigin="auto")
 
                             .card-header
@@ -27,6 +29,9 @@ link(href="https://getbootstrap.com/docs/4.0/examples/cover/cover.css", rel="sty
 
                             .card-body
                                 ={- puppy.description -}
+
+                                if (puppy.shibe)
+                                    p.text-warning|shibe!!!
 
         footer.mastfoot.mt-auto
             .inner

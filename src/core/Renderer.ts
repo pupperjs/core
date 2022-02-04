@@ -6,6 +6,8 @@ import { Reactive } from "./renderer/Reactive";
 
 const debug = require("debug")("pupperjs:renderer");
 
+export type CompiledTemplate = pug.compileTemplate;
+
 export interface NodeOptions {
     /**
      * Any prefix to be passed to the dot notation
@@ -24,7 +26,9 @@ export enum NodePreparationResult {
     FAILED
 }
 
-export default class PupperRenderer {
+type K = keyof HTMLElementEventMap;
+
+export class Renderer {
     private static SYNTAX_REGEX = /(?: +)?\@p\:(?<command>.+)\((?<property>.+?)\)(?: +)?/;
 
     /**
@@ -36,6 +40,12 @@ export default class PupperRenderer {
      * The reactive data
      */
     public data: ProxyHandler<Reactive.ReactiveData> = {};
+
+    /**
+     * The methods to be attributed with the elements
+     */
+    // @ts-ignore
+    public methods: Record<string, (this: HTMLElement, ev: HTMLElementEventMap[K]) => any> = {};
 
     /**
      * The DOM element that will receive all children
@@ -147,7 +157,7 @@ export default class PupperRenderer {
      * @param data The new template data
      * @returns The proxied data object
      */
-    public setData<T extends object>(data: T): ProxyHandler<T> {
+    public setData<T extends Record<any, any>>(data: T): ProxyHandler<T> {
         // Prepare the proxy
         const proxy = {
             get(target: Record<any, any>, key: string): any {
@@ -249,7 +259,7 @@ export default class PupperRenderer {
         command = command.trim();
 
         // Parse it
-        const parsed = command.match(PupperRenderer.SYNTAX_REGEX);
+        const parsed = command.match(Renderer.SYNTAX_REGEX);
         
         if (parsed === null) {
             throw new Error("Failed to parse command \"" + command + "\"");
@@ -389,10 +399,47 @@ export default class PupperRenderer {
             // Skip children preparation
             return NodePreparationResult.SKIP_CHILD;
         } else
+        // Check if it's an if
+        if (element.tagName === "P:IF") {
+            const condition = element.getAttribute("condition").match(/\@p\:conditional\((.+?)\)/)[1];
+            const then = element.querySelector("p\\:then")?.innerHTML;
+            const otherwise = element.querySelector("p\\:else")?.innerHTML;
+
+            const comment = document.createComment(" ");
+            element.replaceWith(comment);
+
+            const regex = /\(?(?<var>[\w\."'()]+)(\s*[=!]\s*)?\)?/g;
+
+            let variables: string[] = [];
+            let variable;
+
+            while(variable = regex.exec(condition)) {
+                variables.push(variable[1]);
+            }
+
+            variables.forEach((variable) => {
+                this.reactor.addReactivity(comment, options.pathPrefix + variable, "if", {
+                    condition, then, otherwise
+                });
+            });
+        } else
         // Check if it's an HTML element
         if (element instanceof HTMLElement) {
             // Iterate over all the attributes
             element.getAttributeNames().forEach((attr) => {
+                // Check if it's a bind attribute
+                if (attr.startsWith("@p:bind:")) {
+                    this.reactor.bindEvent(
+                        element,
+                        attr.replace("@p:bind:", ""),
+                        element.getAttribute(attr)
+                    );
+
+                    element.removeAttribute(attr);
+
+                    return;
+                }
+
                 // Check if it doesn't start with our identifier
                 if (element.getAttribute(attr).indexOf("@p:") === -1) {
                     return;

@@ -9,9 +9,18 @@ export default class ForEach extends Token {
             const node = nodes[index];
 
             // Check if it's a foreach
-            if (node.type === "Tag" && node.name === "foreach" && node.block?.nodes[0].type === "Text") {
-                // Parse the parts
-                const condition: RegExpMatchArray = ("foreach " + node.block?.nodes[0].val).match(ForEach.FOREACH_CONDITION);
+            if (node.type === "Tag" && node.name === "foreach") {
+                let condition: RegExpMatchArray;
+
+                // Check if the next node is a text node
+                if (node.block?.nodes[0].type === "Text") {
+                    condition = ("foreach " + node.block?.nodes[0].val).match(ForEach.FOREACH_CONDITION);
+
+                    // Remove the text from the nodes
+                    node.block.nodes.splice(0, 1);
+                } else {
+                    condition = ("foreach " + node.attrs.map((attr) => attr.name).join(" ")).match(ForEach.FOREACH_CONDITION);
+                }
 
                 // Check if it's an invalid foreach condition
                 if (!condition) {
@@ -22,9 +31,6 @@ export default class ForEach extends Token {
 
                 // Set the tag name
                 node.name = "p:foreach";
-
-                // Remove the text from it
-                node.block.nodes.splice(0, 1);
 
                 // Setup the attributes for the foreach
                 node.attrs = [
