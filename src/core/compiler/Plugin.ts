@@ -1,7 +1,7 @@
 import Lexer from "./Lexer";
 import Token from "./lexer/Token";
 
-import { PugPlugin, PugToken, PugAST, PugNode } from "pug";
+import { PugPlugin, PugToken, PugAST, PugNode, Options } from "pug";
 
 export { PugToken, PugAST, PugNode };
 
@@ -19,12 +19,23 @@ export default class Plugin implements PugPlugin {
      */
     private hooks: Record<string, Function[]> = {};
 
+    /**
+     * Any data to be shared between hooks and phases
+     */
+    public sharedData: Record<any, any> = {};
+
     public lex = new Lexer();
 
-    constructor() {
+    constructor(
+        protected options: Options
+    ) {
         for(let token of Lexer.Tokens) {
             this.tokens.push(new token(this));
         }
+    }
+
+    public getOptions() {
+        return this.options;
     }
 
     public addHook(hook: string, callback: Function) {

@@ -11,7 +11,7 @@ export default class ForEach extends Token {
                 // Clone it
                 const conditional = { ...node };
 
-                // Replace with a tag
+                // Replace with an if markup tag
                 node.type = "Tag";
                 node.name = "p:if";
                 node.selfClosing = false;

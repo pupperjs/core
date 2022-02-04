@@ -19,19 +19,13 @@ import(Puppy from "./puppy.pupper")
             .row.mt-5.justify-content-around.align-items-center
                 //- Reactive puppies
                 foreach(puppy of puppies)
-                    .col-5.mb-5
-                        .puppy.card.px-0(data-id={{ puppy.id }}, style={ cursor: "pointer" }, @click="onClickPuppy").text-dark
-                            img.card-img-top(src={- puppy.thumbnail -}, crossorigin="auto")
-
-                            .card-header
-                                h5.card-title={{ puppy.title }}
-                                small.text-muted|Served by pupper.js
-
-                            .card-body
-                                ={- puppy.description -}
-
-                                if (puppy.shibe)
-                                    p.text-warning|shibe!!!
+                    //- Render the puppy and share the onClickPuppy method with it
+                    Puppy(
+                        data={ puppy },
+                        methods={
+                            onClickPuppy: $methods.onClickPuppy
+                        }
+                    )
 
         footer.mastfoot.mt-auto
             .inner

@@ -6,7 +6,17 @@ import { Reactive } from "./renderer/Reactive";
 
 const debug = require("debug")("pupperjs:renderer");
 
-export type CompiledTemplate = pug.compileTemplate;
+/**
+ * Represents the final contents of a pupper.js file
+ * It's the render function itself plus some useful things
+ */
+export type CompiledTemplate = pug.compileTemplate & {
+    /**
+     * A handler for all imports that this compiled template uses
+     * where the key is the tag name, and the value is the compiled template
+     */
+    imports?: Record<string, CompiledTemplate>;
+}
 
 export interface NodeOptions {
     /**
@@ -32,7 +42,7 @@ export class Renderer {
     /**
      * The pug compiled template function
      */
-    private template: pug.compileTemplate;
+    private template: CompiledTemplate;
 
     /**
      * The reactive data
@@ -60,7 +70,7 @@ export class Renderer {
      * @param template The pug compiled template function
      * @param data The data that will be used for reactivity
      */
-    constructor(template: pug.compileTemplate, settings?: {
+    constructor(template: CompiledTemplate, settings?: {
         data?: Reactive.ReactiveData,
         methods?: Reactive.ReactiveMethods
     }) {
@@ -87,6 +97,16 @@ export class Renderer {
 
         return {
             deepGetSet,
+
+            /**
+             * The methods related to this renderer
+             */
+            $methods: this.methods,
+
+            /**
+             * The data related to this renderer
+             */
+            $data: this.data,
 
             /**
              * Pupper helpers
@@ -224,9 +244,9 @@ export class Renderer {
         const target = document.createElement("div");
         target.classList.add("pupper");
         
-        this.dom = this.renderTo(this.dom);
+        this.dom = this.renderTo(target);
 
-        return this.dom;
+        return target;
     }
 
     /**
@@ -427,6 +447,29 @@ export class Renderer {
                     condition, then, otherwise
                 });
             });
+        } else
+        // Check if it's an import
+        if (element.tagName === "P:IMPORT") {
+            const template = element.getAttribute("template");
+            const data = element.getAttribute("data");
+            const methods = element.getAttribute("methods");
+
+            // Get the compiled template
+            const compiledTemplate: CompiledTemplate = this.template.imports?.[template];
+
+            // If the template doesn't exists
+            if (compiledTemplate === undefined) {
+                throw new Error("Tried to import an unknown template named " + template)
+            }
+
+            // Create the renderer for this template
+            const renderer = new Renderer(compiledTemplate, {
+                data: this.data,
+                methods: this.methods
+            });
+
+            // Render the template and replace the element with it
+            element.replaceWith(...renderer.render().childNodes);
         } else
         // Check if it's an HTML element
         if (element instanceof HTMLElement) {

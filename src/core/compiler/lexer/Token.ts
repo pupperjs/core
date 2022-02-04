@@ -6,7 +6,7 @@ export default class Token {
     public static readonly REGEX: RegExp;
 
     constructor(
-        protected parser: Plugin
+        protected plugin: Plugin
     ) {
         
     }
