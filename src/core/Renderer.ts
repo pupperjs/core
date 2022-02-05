@@ -36,6 +36,60 @@ export enum NodePreparationResult {
     FAILED
 }
 
+export class PupperHelper {
+    constructor(
+        protected renderer: Renderer
+    ) {
+
+    }
+
+    /**
+     * 
+     * @param key The path to the data to be retrieved
+     * @param context Any additional contexts
+     * @returns 
+     */
+    public getValue(key: string, context?: Record<string, any>) {
+        let value;
+
+        // First, try from the context
+        if (context !== undefined) {
+            value = deepGetSet(context, key);
+        }
+
+        // Then try from the data itself
+        if (value === undefined) {
+            value = deepGetSet(this.renderer.getData(), key);
+        }
+
+        debug("retrieving value %s: %O", key, value);
+
+        return value;
+    }
+
+    /**
+     * Retrieves an escaped value to be displayed
+     * @param key The path to the data to be escaped
+     * @returns 
+     */
+    public escape(key: string, context?: Record<string, any>): string {
+        const text = document.createTextNode(
+            this.getValue(key, context)
+        );
+
+        return text.textContent;
+    }
+
+    /**
+     * Retrieves a literal value to be displayed
+     * @param key The path to the data to be retrieved
+     * @returns 
+     */
+    public literal<T>(key: string, context?: Record<string, any>): T {
+        return this.getValue(key, context);
+    }
+}
+
 export class Renderer {
     private static SYNTAX_REGEX = /(?: +)?\@p\:(?<command>.+)\((?<property>.+?)\)(?: +)?/;
 
@@ -66,6 +120,28 @@ export class Renderer {
     public reactor: Reactor;
 
     /**
+     * The cached helpers for this Renderer
+     */
+    public helpers: Record<string, any> & {
+        deepGetSet: (object: object, key: any, value?: any) => any;
+
+        /**
+         * The methods related to this renderer
+         */
+        $methods: Reactive.ReactiveMethods;
+
+        /**
+         * The data related to this renderer
+         */
+        $data: ProxyHandler<Reactive.ReactiveData>;
+
+        /**
+         * Pupper helpers
+         */
+        pupper: PupperHelper;
+    };
+
+    /**
      * Creates a new renderer instance
      * @param template The pug compiled template function
      * @param data The data that will be used for reactivity
@@ -93,72 +169,30 @@ export class Renderer {
      * @returns 
      */
     private getHelpers() {
-        const self = this;
+        if (this.helpers === undefined) {
+            const self = this;
 
-        return {
-            deepGetSet,
-
-            /**
-             * The methods related to this renderer
-             */
-            $methods: this.methods,
-
-            /**
-             * The data related to this renderer
-             */
-            $data: this.data,
-
-            /**
-             * Pupper helpers
-             */
-            pupper: class PupperHelper {
-                /**
-                 * 
-                 * @param key The path to the data to be retrieved
-                 * @param context Any additional contexts
-                 * @returns 
-                 */
-                static getValue(key: string, context?: Record<string, any>) {
-                    let value;
-
-                    // First, try from the context
-                    if (context !== undefined) {
-                        value = deepGetSet(context, key);
-                    }
-
-                    // Then try from the data itself
-                    if (value === undefined) {
-                        value = deepGetSet(self.getData(), key);
-                    }
-
-                    debug("retrieving value %s: %O", key, value);
-
-                    return value;
-                }
+            this.helpers = {
+                deepGetSet,
 
                 /**
-                 * Retrieves an escaped value to be displayed
-                 * @param key The path to the data to be escaped
-                 * @returns 
+                 * The methods related to this renderer
                  */
-                static escape(key: string, context?: Record<string, any>): string {
-                    const text = document.createTextNode(
-                        this.getValue(key, context)
-                    );
-
-                    return text.textContent;
-                }
+                $methods: this.methods,
 
                 /**
-                 * Retrieves a literal value to be displayed
-                 * @param key The path to the data to be retrieved
-                 * @returns 
+                 * The data related to this renderer
                  */
-                static literal<T>(key: string, context?: Record<string, any>): T {
-                    return this.getValue(key, context);
-                }
-            }
-        };
+                $data: this.data,
+
+                /**
+                 * Pupper helpers
+                 */
+                pupper: new PupperHelper(this)
+            };
+        }
+
+        return this.helpers;
     }
 
     /**
@@ -360,6 +394,19 @@ export class Renderer {
         return true;
     }
 
+    private scopedEval(expr: string, context: Record<string, any>) {
+        const evaluator = Function.apply(
+            null,
+            [
+                ...Object.keys(context),
+                "expr",
+                `return ${expr}`
+            ]
+        );
+
+        return evaluator.apply(null, [...Object.values(context), expr]);
+    }
+
     /**
      * Prepares a single HTML element
      * @param element The element to be prepared
@@ -462,10 +509,17 @@ export class Renderer {
                 throw new Error("Tried to import an unknown template named " + template)
             }
 
+            const contextualizedHelpers = { ...this.getHelpers(), ...options.context };
+
+            const compiledData = data ? this.scopedEval(data, contextualizedHelpers) : this.data;
+            const compiledMethods = methods ? this.scopedEval(methods, contextualizedHelpers) : this.methods;
+
+            console.log(data, compiledData);
+
             // Create the renderer for this template
             const renderer = new Renderer(compiledTemplate, {
-                data: this.data,
-                methods: this.methods
+                data: compiledData,
+                methods: compiledMethods
             });
 
             // Render the template and replace the element with it
