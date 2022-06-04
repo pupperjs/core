@@ -7,7 +7,6 @@ node_modules
 yarn-error.log
 yarn.lock
 
-types/
 !src/types
 
 # Logs
