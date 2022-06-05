@@ -1,0 +1,43 @@
+style
+    .something {
+        color: white;
+    }
+
+style:sass
+    .something2 {
+        color: white;
+
+        &.poggers {
+            content: "You're my little pogchamp";
+        }
+    }
+
+script
+    export default defineComponent({
+        
+    })
+
+script:ts
+    interface ITest {
+
+    }
+
+script:typescript
+    enum ETest {
+
+    }
+
+template:html
+    <html>
+        <strong>Teste</strong>
+    </html>
+
+import(ImportedComponent from "test")
+
+template
+    ImportedComponent
+        template:slot-name
+            |Filling a slot inside a component
+
+    slot:slot-name
+        |Default slot content

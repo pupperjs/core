@@ -1,0 +1,29 @@
+{
+    "name": "pupper-js",
+    "displayName": "Pupper.js",
+    "description": "",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.46.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [{
+            "id": "pupper",
+            "aliases": ["Pupper.js", "pupper"],
+            "extensions": [".pupper"],
+            "configuration": "./language-configuration.json",
+            "icon": {
+                "dark": "./assets/icon.png",
+                "light": "./assets/icon.png"
+            }
+        }],
+        "grammars": [{
+            "language": "pupper",
+            "scopeName": "source.pupper",
+            "path": "./syntaxes/pupper.tmLanguage.json"
+        }]
+    }
+}
