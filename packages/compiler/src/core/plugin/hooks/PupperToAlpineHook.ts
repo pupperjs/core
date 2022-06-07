@@ -1,8 +1,8 @@
 import { PugToken } from "../../Plugin";
-import Token from "../Token";
+import { Hook } from "../Hook";
 
-export default class PupperToAlpine extends Token {
-    public static Directives: Record<string, string> = {
+export class PupperToAlpineHook extends Hook {
+    public static Attributes: Record<string, string> = {
         "p-show": "x-show",
         "p-on": "x-on",
         "p-text": "x-text",
@@ -18,8 +18,7 @@ export default class PupperToAlpine extends Token {
         "ref": "x-ref",
         "p-cloak": "x-cloak",
         "p-if": "x-if",
-        "p-id": "x-id",
-        "p-teleport": "x-teleport"
+        "p-id": "x-id"
     };
 
     public lex(tokens: PugToken[]) {
@@ -29,10 +28,13 @@ export default class PupperToAlpine extends Token {
                 return token;
             }
 
-            // If it's a replaceable directive
-            if (token.name in PupperToAlpine.Directives) {
-                token.name = PupperToAlpine.Directives[token.name];
+            // If it's a replaceable attribute
+            if (token.name in PupperToAlpineHook.Attributes) {
+                // Replace it
+                token.name = PupperToAlpineHook.Attributes[token.name];
             }
+
+            // If it's a p-insert
 
             return token;
         });

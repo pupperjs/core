@@ -1,7 +1,16 @@
-import { Project, ScriptTarget, SourceFile, SyntaxKind, ObjectLiteralExpression, CallExpression, PropertyAccessExpression } from "ts-morph";
+import {
+    Project,
+    ScriptTarget,
+    SourceFile,
+    SyntaxKind,
+    ObjectLiteralExpression,
+    CallExpression,
+    PropertyAccessExpression
+} from "ts-morph";
+
 import Plugin from "../../../Plugin";
 
-import { IComponent } from "../Component";
+import { IComponent } from "../ComponentHook";
 
 export class ScriptParser {
     protected sourceFile: SourceFile;

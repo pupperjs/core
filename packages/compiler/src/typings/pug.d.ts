@@ -2,10 +2,7 @@ import type pug from "pug";
 import type PugLexer from "pug-lexer";
 import { LexTokenType } from "pug-lexer";
 
-/**
- * We use this to document the pug non-documented plugin API
- */
-declare module "pug" {
+export declare namespace Pug {
     export interface LexerPlugin {
         /**
          * Checks if a given expression is valid
@@ -28,26 +25,41 @@ declare module "pug" {
     }
 
     /**
-     * Represents a pug block
+     * Represents a pug AST.
      */
     export interface PugAST {
-        type: "Block",
-        nodes: PugNode[]
+        type: "Block";
+        nodes: PugNodes[];
     }
 
     /**
-     * Represents a generic pug node
+     * Represents a pug block.
+     */
+    export interface PugBlock {
+        type: "Block";
+        nodes: PugNodes[];
+        line?: number;
+        filename?: string;
+    }
+
+    /**
+     * Represents a single pug node attribute.
+     */
+    export interface PugNodeAttribute {
+        name: string,
+        val: string,
+        mustEscape: boolean
+    }
+
+    /**
+     * Represents a generic pug node.
      */
     export interface PugNode extends Record<string, any> {
-        type: string,
-        start?: number,
-        end?: number,
-        block?: PugAST,
-        attrs?: {
-            name: string,
-            val: string,
-            mustEscape: boolean
-        }[]
+        type?: string;
+        attributeBlocks?: [];
+        line: number;
+        column: number;
+        block?: PugAST;
     }
 
     /**
@@ -160,4 +172,72 @@ declare module "pug" {
          */
         plugins?: PugPlugin[]
     }
+
+    export declare namespace Nodes {
+        export declare interface TagNode extends PugNode {
+            type: "Tag";
+            name: string;
+            selfClosing: boolean;
+            attrs: PugNodeAttribute[];
+            isInline: boolean;
+        }
+
+        export declare interface ConditionalNode extends PugNode {
+            type: "Conditional";
+            test: string;
+            consequent: PugBlock;
+            alternate: PugBlock;
+        }
+
+        export declare interface EachNode extends PugNode {
+            type: "Each";
+            val: string;
+            obj: string;
+            index: string;
+        }
+
+        export declare interface MixinNode extends PugNode {
+            type: "Mixin";
+        }
+    }
+}
+
+/**
+ * We use this to document the pug non-documented plugin API
+ */
+declare module "pug" {
+    export interface LexerPlugin extends Pug.LexerPlugin {
+
+    }
+
+    export interface Options extends Pug.Options {
+
+    }
+
+    export interface PugPlugin extends Pug.PugPlugin {
+
+    }
+
+    export interface PugNode extends Pug.PugNode {
+
+    }
+
+    export interface  PugNodeAttribute extends Pug.PugNodeAttribute {
+
+    }
+
+    export interface PugAST extends Pug.PugAST {
+
+    }
+
+    export interface PugToken extends Pug.PugToken {
+
+    }
+
+    export type PugNodes = (
+        Pug.Nodes.TagNode |
+        Pug.Nodes.ConditionalNode |
+        Pug.Nodes.EachNode |
+        Pug.Nodes.MixinNode
+    );
 }

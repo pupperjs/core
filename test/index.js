@@ -4,6 +4,9 @@ import { defineComponent } from "@pupperjs/renderer";
 import ImportedComponent from "./templates/ImportedComponent.pupper";
 import ExportedComponent from "./templates/ExportedComponent.pupper";
 
+console.log("Imported", ImportedComponent);
+console.log("Exported", ExportedComponent);
+
 const pupper = defineComponent({
     render: Template,
     methods: {
@@ -22,13 +25,15 @@ const pupper = defineComponent({
                 id: 1,
                 title: "A cutie pup",
                 description: "Look at this cutie",
-                thumbnail: "https://placedog.net/800"
+                thumbnail: "https://placedog.net/800",
+                properties: ["beautiful", "doge"]
             },
             {
                 id: 2,
                 title: "Another cute pup",
                 description: "Isn't it a cute doggo?!",
-                thumbnail: "https://placedog.net/400"
+                thumbnail: "https://placedog.net/400",
+                properties: ["wow", "much woof"]
             }
         ]
     }

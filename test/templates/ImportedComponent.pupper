@@ -1,4 +1,4 @@
-import(ExportedComponent from "./ExportedComponent.pupper")
+import ExportedComponent(from="./ExportedComponent.pupper")
 
 component(export)
     template
@@ -15,7 +15,7 @@ component(export)
 
         export default Pupper.defineComponent({
             mounted() {
-                console.log("Mounted, rendering", ExportedComponent);
+                console.log("Rendering the exported component into slot \"slot\"");
                 ExportedComponent.mount(this.$slots.slot);
             }
         });

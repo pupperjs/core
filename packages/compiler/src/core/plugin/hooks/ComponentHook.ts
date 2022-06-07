@@ -1,6 +1,9 @@
-import { PugNode } from "../../Plugin";
-import Token from "../Token";
+import { IPluginNode } from "../../Plugin";
+import { Hook } from "../Hook";
+import { TagNode } from "../nodes/TagNode";
 import { ScriptParser } from "./component/ScriptParser";
+import { IfHook } from "./IfHook";
+import { StyleAndScriptHook } from "./StyleAndScriptHook";
 
 const DefaultExportSymbol = Symbol("ExportedComponent");
 
@@ -13,22 +16,27 @@ export interface IComponent {
     exported?: boolean;
 }
 
-export default class Component extends Token {
-    /**
-     * Parses a pug node into a component.
-     * @param node The pug node to be parsed.
-     * @returns 
-     */
-    public parseNode(node: PugNode, nextNode: PugNode) {
-        const name = node.attrs.find((node) => node.name === "name")?.val.replace(/"/g, "");
+export class ComponentHook extends Hook {
+    public $after = [IfHook, StyleAndScriptHook];
 
-        const template = node.block?.nodes.find((node) => node.type === "Tag" && node.name === "template");
-        const script = node.block?.nodes.find((node) => node.type === "Tag" && node.name === "script");
-        const style = node.block?.nodes.find((node) => node.type === "Tag" && node.name === "style");
+    /**
+     * The imports that will later be putted into the template header
+     */
+    protected components: Record<string | symbol, IComponent> = {};
+ 
+    public parseComponentNode(node: TagNode) {
+        const name = node.getAttribute("name")?.replace(/"/g, "");
+
+        const template = node.findFirstChildByTagName("template") as TagNode;
+        const script = node.findFirstChildByTagName("script") as TagNode;
+        const style = node.findFirstChildByTagName("style") as TagNode;
 
         // If no script tag was found
         if (!script) {
-            throw new Error("Components must have at least a script tag.");
+            throw this.makeError("COMPONENT_HAS_NO_SCRIPT_TAG", "Components must have a a script tag.", {
+                line: node.getLine(),
+                column: node.getColumn()
+            });
         }
 
         /**
@@ -39,7 +47,7 @@ export default class Component extends Token {
             template: null,
             script: null,
             style: null,
-            exported: node.attrs.find((attr) => attr.name === "export") !== undefined
+            exported: node.hasAttribute("export")
         };
 
         // If the component is not exported and has no name
@@ -55,13 +63,14 @@ export default class Component extends Token {
 
         // If has a template
         if (template) {
+            this.plugin.parseChildren(template);
             let lines = this.plugin.options.contents.split("\n");
 
-            const nextNodeAfterTemplate = node.block.nodes[node.block.nodes.indexOf(template) + 1];
+            const nextNodeAfterTemplate = template.getNextNode();
 
             lines = lines.slice(
-                template.line,
-                nextNodeAfterTemplate ? nextNodeAfterTemplate.line - 1 : nextNode.line - 1
+                template.getLine(),
+                nextNodeAfterTemplate ? nextNodeAfterTemplate.getLine() - 1 : (node.hasNext() ? node.getNextNode().getLine() - 1 : lines.length)
             );
 
             // Detect identation
@@ -78,7 +87,9 @@ export default class Component extends Token {
 
         // If has a script
         if (script) {
-            const scriptContent = script.block.nodes.map((node) => node.val).join("");
+            this.plugin.parseChildren(script);
+
+            const scriptContent = script.getChildren().map((node) => node.getProp("val")).join("");
             component.script = scriptContent;
         }
 
@@ -90,35 +101,20 @@ export default class Component extends Token {
         return component;
     }
 
-    /**
-     * The imports that will later be putted into the template header
-     */
-    protected components: Record<string | symbol, IComponent> = {};
+    public parse(nodes: IPluginNode[]) {
+        for(let node of nodes) {
+            // Check if it's a tag "component" node
+            if (node.isType("Tag") && node.isName("component")) {
+                // Parse the component
+                const component = this.parseComponentNode(node as TagNode);
 
-    public parse(nodes: PugNode[]) {
-        for(let i = 0; i < nodes.length; i++) {
-            const node = nodes[i];
+                // Save the component
+                this.components[component.name] = component;
 
-            // Check if it's a tag node
-            if (node.type === "Tag") {
-                // If it's a component tag
-                if (node.name === "component") {
-                    // Parse the component
-                    const component = this.parseNode(node, nodes[i + 1]);
+                // Remove the node from the template
+                node.delete();
 
-                    // Save the component
-                    this.components[component.name] = component;
-
-                    // Remove the node from the body
-                    nodes.splice(nodes.indexOf(node), 1);
-
-                    continue;
-                }
-            }
-
-            // Parses the block
-            if (node.block) {
-                node.block.nodes = this.parse(node.block.nodes);
+                continue;
             }
         }
 
@@ -133,12 +129,12 @@ export default class Component extends Token {
             // Parse the script
             const parsedScript = new ScriptParser(
                 exportedComponent,
-                this.plugin.getOptions().filename,
+                this.plugin.getCompilerOptions().filename,
                 this.components,
                 this.plugin
             ).parse();
 
-            code += `\n\n${parsedScript}\n`;
+            code = `${parsedScript}\n`;
 
             if (exportedComponent.style) {
                 code += `\n${exportedComponent.style}\n`;

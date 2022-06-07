@@ -234,7 +234,7 @@ export class PupperComponent {
                 };
             }
         }
-        
+
         // Iterate over all references
         for(let ref of refs) {
             // Save it
@@ -246,9 +246,6 @@ export class PupperComponent {
 
         const container = renderContainer.content.children[0];
 
-        this.$identifier = "pup_" + String(Date.now());
-        container.setAttribute("x-data", this.$identifier);
-
         return container;
     }
 
@@ -258,7 +255,22 @@ export class PupperComponent {
      * @returns 
      */
     public mount(target: HTMLElement | Slot) {
+        this.$identifier = "p_" + String((Math.random() + 1).toString(36).substring(2));
+
         const rendered = this.render();
+        rendered.setAttribute("x-data", this.$identifier);
+
+        // Initialize the data
+        Alpine.data(this.$identifier, () => {
+            return {
+                ...this.$data,
+                init() {
+                    if (this.component?.mounted) {
+                        this.component.mounted.call(this);
+                    }
+                }
+            };
+        });
 
         if (!(target instanceof HTMLElement)) {
             target.container.replaceWith(rendered);
@@ -267,23 +279,14 @@ export class PupperComponent {
             target.appendChild(rendered);
         }
 
-        // Initialize the data
-        Alpine.data(this.$identifier, () => {
-            return this.$data;
-        });
-
         // Initialize Alpine for it
-        Alpine.start();
+        Alpine.initTree(rendered);
 
         // Remove the identifier
-        rendered.removeAttribute("x-data");
+        //rendered.removeAttribute("x-data");
 
         // Save a reference to the internal Alpine data proxy
         // @ts-ignore
-        this.$data = Alpine.$data(rendered);
-
-        if (this.component?.mounted) {
-            this.component.mounted.call(this);
-        }        
+        this.$data = rendered._x_dataStack[0];      
     }
 }

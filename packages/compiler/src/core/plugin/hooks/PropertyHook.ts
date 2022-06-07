@@ -1,17 +1,12 @@
 import { PugToken } from "../../Plugin";
-import Token from "../Token";
+import { Hook } from "../Hook";
 
-export default class Property extends Token {
+export class PropertyHook extends Hook {
     /**
      * The regex to test if an expression is a valid reactive item
      */
     public static REGEX = /\{(?<tag>\{|-) ?(?<exp>(?:[\w+]|\.)+) ?(\}|-)\}/;
 
-    /**
-     * Tests if the token matches with the given expression
-     * @param exp The expression to be tested
-     * @returns 
-     */
     public static testExpression(exp: string) {
         return this.REGEX.test(exp);
     }
@@ -24,9 +19,9 @@ export default class Property extends Token {
             }
 
             // Check if it's a reactive item
-            if (token.mustEscape && Property.REGEX.test(token.val)) {
+            if (token.mustEscape && PropertyHook.REGEX.test(token.val)) {
                 // Extract the token value
-                const result = token.val.match(Property.REGEX).groups;
+                const result = token.val.match(PropertyHook.REGEX).groups;
                 const value = result.exp.replace(/\"/g, "\\\"");
 
                 const fn = result.tag === "{" ? "escape" : "literal";

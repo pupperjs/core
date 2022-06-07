@@ -9,21 +9,34 @@
     "categories": [
         "Programming Languages"
     ],
+    "publisher": "Matheus Giovani",
     "contributes": {
-        "languages": [{
-            "id": "pupper",
-            "aliases": ["Pupper.js", "pupper"],
-            "extensions": [".pupper"],
-            "configuration": "./language-configuration.json",
-            "icon": {
-                "dark": "./assets/icon.png",
-                "light": "./assets/icon.png"
+        "languages": [
+            {
+                "id": "pupper",
+                "aliases": [
+                    "Pupper.js",
+                    "pupper"
+                ],
+                "extensions": [
+                    ".pupper"
+                ],
+                "configuration": "./language-configuration.json",
+                "icon": {
+                    "dark": "./assets/icon.png",
+                    "light": "./assets/icon.png"
+                }
             }
-        }],
-        "grammars": [{
-            "language": "pupper",
-            "scopeName": "source.pupper",
-            "path": "./syntaxes/pupper.tmLanguage.json"
-        }]
+        ],
+        "grammars": [
+            {
+                "language": "pupper",
+                "scopeName": "source.pupper",
+                "path": "./syntaxes/pupper.tmLanguage.json"
+            }
+        ]
+    },
+    "devDependencies": {
+        "vsce": "^2.9.1"
     }
 }

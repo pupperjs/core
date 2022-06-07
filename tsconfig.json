@@ -12,8 +12,7 @@
         "emitDecoratorMetadata": true,
         "moduleResolution": "node",
         "module": "commonjs",
-        "skipLibCheck": true,
-        "typeRoots": ["./packages/common/types"]
+        "skipLibCheck": true
     },
     "include": ["./**/*.ts"],
     "exclude": ["node_modules"],

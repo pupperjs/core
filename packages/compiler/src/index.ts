@@ -45,7 +45,7 @@ export = class PupperCompiler {
 
             return rendered;
         } catch(e) {
-            throw (options.debug ? e : new Error("Failed to compile template:" + e.message));
+            throw (options.debug ? e : new Error("Failed to compile template: " + e.message));
         }
     }
 

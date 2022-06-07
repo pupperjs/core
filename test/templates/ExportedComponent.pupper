@@ -7,7 +7,7 @@ component(export)
 
         hr
 
-    script(lang="ts", type="text/javascript").
+    script(lang="ts", type="text/javascript")
         import Pupper from "@pupperjs/renderer";
 
         export default Pupper.defineComponent({
