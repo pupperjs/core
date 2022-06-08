@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "alpinejs": "^3.10.2",
+    "morphdom": "^2.6.1",
     "pug": "^3.0.2"
   },
   "types": "./types/",

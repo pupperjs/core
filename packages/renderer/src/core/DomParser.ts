@@ -1,4 +1,5 @@
 import Alpine from "alpinejs";
+import morphdom from "morphdom";
 
 const AlpineNames = ["x-data", "x-teleport", "x-text", "x-html"];
 
@@ -94,9 +95,15 @@ export class DOMParser {
         return new Promise<void>((resolve) => Alpine.nextTick(resolve));
     }
 
+    /**
+     * Flushes the updates to the DOM container.
+     */
     protected flush() {
-        this.container.appendChild(this.template.content.firstChild);
-        this.filterChildrenAlpineAttributes(this.container);
+        morphdom(this.container, this.template.content, {
+            childrenOnly: true
+        });
+        
+        this.filterAlpineAttributes(this.container);
     }
 
     protected filterAlpineAttributes(el: Element) {

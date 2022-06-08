@@ -71,9 +71,9 @@ export class PupperComponent {
     protected $identifier: string;
 
     /**
-     * All the data that will be passed to the renderer and Alpine.
+     * The state related to this component.
      */
-    private $data: Record<string, any> = {};
+    private $state: Record<string, any> = {};
 
     /**
      * Any slots references.
@@ -101,7 +101,7 @@ export class PupperComponent {
         // If has methods
         if (component?.methods) {
             for(let method in component.methods) {
-                this.$data[method] = component.methods[method];
+                this.$state[method] = component.methods[method];
             }
         }
 
@@ -113,26 +113,26 @@ export class PupperComponent {
 
             for(let key in component.data) {
                 // If it's already registered
-                if (key in this.$data) {
+                if (key in this.$state) {
                     throw new Error("There's already a property named " + key + " registered in the component. Property names should be unique.");
                 }
 
-                this.$data[key] = component.data[key];
+                this.$state[key] = component.data[key];
             }
         }
 
         // For each generated data
-        for(let key in this.$data) {
+        for(let key in this.$state) {
             // Prepare a descriptor for the base component
             const attributes: PropertyDescriptor = {
                 get() {
-                    return this.$data[key]
+                    return this.$state[key]
                 }
             };
 
             // If it's not a function
-            if (typeof this.$data[key] !== "function") {
-                attributes.set = (value) => this.$data[key] = value;
+            if (typeof this.$state[key] !== "function") {
+                attributes.set = (value) => this.$state[key] = value;
             }
 
             // Define the property inside the component
@@ -200,9 +200,9 @@ export class PupperComponent {
     /**
      * Renders the template function into a div tag.
      */
-    public render(data?: Record<string, any>) {
+    public render() {
         const tree = this.component.render();
-        let renderContainer: HTMLTemplateElement;
+        let renderContainer = this.renderStringToTemplate(tree);
 
         // Find all slots, templates and references
         const slots = Array.from(renderContainer.content.querySelectorAll("slot"));
@@ -247,9 +247,7 @@ export class PupperComponent {
             ref.removeAttribute("ref");
         }
 
-        const container = renderContainer.content.children[0] as HTMLElement;
-
-        return container;
+        return renderContainer.content.firstChild as HTMLElement;
     }
 
     /**
@@ -266,7 +264,7 @@ export class PupperComponent {
         // Initialize the data
         Alpine.data(this.$identifier, () => {
             return {
-                ...this.$data,
+                ...this.$state,
                 init() {
                     if (this.component?.mounted) {
                         this.component.mounted.call(this);
@@ -292,7 +290,7 @@ export class PupperComponent {
 
         // Save a reference to the internal Alpine data proxy
         // @ts-ignore
-        this.$data = mounted._x_dataStack[0];
+        this.$state = mounted._x_dataStack[0];
 
         return mounted;
     }
