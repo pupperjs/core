@@ -1,5 +1,4 @@
 import Alpine from "alpinejs";
-import morphdom from "morphdom";
 
 const AlpineNames = ["x-data", "x-teleport", "x-text", "x-html"];
 
@@ -96,29 +95,17 @@ export class DOMParser {
     }
 
     protected flush() {
-        morphdom(this.container, this.template.content, {
-            childrenOnly: true,
-            onNodeAdded: (node) => {
-                if (node instanceof HTMLElement) {
-                    if (
-                        (node instanceof HTMLTemplateElement) ||
-                        (node.tagName === "SLOT")
-                    ) {
-                        node.remove();
-                        return node;
-                    }
-
-                    this.filterAlpineAttributes(node);
-                }
-
-                return node;
-            }
-        });
+        this.container.appendChild(this.template.content.firstChild);
+        this.filterChildrenAlpineAttributes(this.container);
     }
 
     protected filterAlpineAttributes(el: Element) {
         Array.from(el.attributes).forEach(({ name }) => {
-            if (name.startsWith("@") || name.startsWith(":") || AlpineNames.includes(name)) {
+            if (
+                AlpineNames.includes(name) ||
+                name.startsWith("x-bind") ||
+                name.startsWith("x-on")
+            ) {
                 el.removeAttribute(name);
             }
         });

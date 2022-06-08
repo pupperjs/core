@@ -59,9 +59,11 @@ export = class PupperCompiler {
         try {
             const pugOptions = this.getPugOptions(options);
             pugOptions.contents = template;
-            const rendered = pug.compile(template, pugOptions);
 
-            return rendered();
+            const fn = pug.compile(template, pugOptions);
+            const rendered = fn();
+
+            return rendered;///*js*/`function $h(h) { return ${htmlToHs({ syntax: "h" })(rendered)}; }`;
         } catch(e) {
             throw (options.debug ? e : new Error("Failed to compile template:" + e.message));
         }

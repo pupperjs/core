@@ -22,7 +22,7 @@ interface IComponent<TData extends Record<string, any>, TMethods extends Record<
     /**
      * The function that renders the template HTML.
      */
-    render?: (data: Record<string, any>) => string;
+    render?: (...args: any[]) => string;
     /**
      * Any data to be passed to the template.
      */

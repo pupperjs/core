@@ -30,7 +30,7 @@ interface IComponent<
     /**
      * The function that renders the template HTML.
      */
-    render?: (data: Record<string, any>) => string;
+    render?: (...args: any[]) => string;
 
     /**
      * Any data to be passed to the template.
@@ -201,10 +201,8 @@ export class PupperComponent {
      * Renders the template function into a div tag.
      */
     public render(data?: Record<string, any>) {
-        // Render the initial string
-        const renderContainer = this.renderStringToTemplate(
-            this.component.render(data)
-        );
+        const tree = this.component.render();
+        let renderContainer: HTMLTemplateElement;
 
         // Find all slots, templates and references
         const slots = Array.from(renderContainer.content.querySelectorAll("slot"));

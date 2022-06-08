@@ -14,8 +14,7 @@
     "alpinejs": "^3.10.2",
     "pug": "^3.0.2",
     "pug-error": "^2.0.0",
-    "ts-morph": "^15.1.0",
-    "tscpaths": "^0.0.9"
+    "ts-morph": "^15.1.0"
   },
   "types": "./types/",
   "devDependencies": {
@@ -24,7 +23,6 @@
     "debug": "^4.3.2",
     "js-beautify": "^1.14.0",
     "tsc": "^2.0.3",
-    "tsconfig-paths": "^4.0.0",
     "typescript": "^4.4.2",
     "webpack": "^5.51.1",
     "webpack-cli": "^4.8.0"

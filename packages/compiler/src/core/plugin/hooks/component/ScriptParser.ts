@@ -90,10 +90,18 @@ export class ScriptParser {
     private processDefaultComponent() {
         const componentProps = this.findComponentPropsObj();
 
+        let fun = "";
+
+        if (this.component.template?.startsWith("function") || this.component.template?.startsWith("()")) {
+            fun = this.component.template;
+        } else {
+            fun = `() => ${JSON.stringify(this.component.template)}`;
+        }
+
         // Add the "render" function to it
         componentProps.addPropertyAssignment({
             name: "render",
-            initializer: `() => ${JSON.stringify(this.component.template)}`
+            initializer: fun
         });
 
         // Filter components that are not the current one

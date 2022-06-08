@@ -43,6 +43,16 @@ export class PupperToAlpineHook extends Hook {
                 console.log(token);
             }
 
+            // Replace @ with x-on:
+            if (token.name.startsWith("@")) {
+                token.name = token.name.replace("@", "x-on:");
+            }
+
+            // Replace : with x-bind:
+            if (token.name.startsWith(":")) {
+                token.name = token.name.replace(":", "x-bind:");
+            }
+
             return token;
         });
     }
