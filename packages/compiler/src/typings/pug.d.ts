@@ -193,7 +193,7 @@ export declare namespace Pug {
             type: "Each";
             val: string;
             obj: string;
-            index: string;
+            key: string;
         }
 
         export declare interface MixinNode extends PugNode {

@@ -1,4 +1,4 @@
-import { appendFileSync, writeFileSync } from "fs";
+import { appendFileSync } from "fs";
 import { inspect } from "util";
 import { NodeModel } from "../model/core/NodeModel";
 

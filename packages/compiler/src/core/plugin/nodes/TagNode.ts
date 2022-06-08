@@ -3,6 +3,14 @@ import { BlockedCompilerNode } from "../../../model/core/nodes/BlockedCompilerNo
 
 export class TagNode extends BlockedCompilerNode<Pug.Nodes.TagNode> {
     /**
+     * Retrieves the tag name.
+     * @returns 
+     */
+    public getName() {
+        return this.getProp("name");
+    }
+
+    /**
      * Checks if the node has the given attribute.
      * @param name The attribute name.
      * @returns 

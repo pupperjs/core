@@ -67,7 +67,7 @@ export class ScriptParser {
             componentPropsComponents.addPropertyAssignment({
                 name: alias,
                 initializer: alias
-            })
+            });
         }
     }
 
@@ -78,7 +78,7 @@ export class ScriptParser {
         let exportedComponents = componentProps.getProperty("components");
 
         if (exportedComponents) {
-            return exportedComponents;
+            return exportedComponents.getFirstChildByKindOrThrow(SyntaxKind.ObjectLiteralExpression);
         }
 
         return componentProps.addPropertyAssignment({
@@ -108,7 +108,7 @@ export class ScriptParser {
             // Add them to the components
             remainingComponents.forEach((component) => {
                 importedComponents.addPropertyAssignment({
-                    name: component.name,
+                    name: String(component.name),
                     initializer: component.name as string
                 });
             });

@@ -2,7 +2,7 @@ import { Hook } from "../Hook";
 import { ConditionalNode } from "../nodes/ConditionalNode";
 import { TagNode } from "../nodes/TagNode";
 
-export class IfHook extends Hook {
+export class ConditionalHook extends Hook {
     public parse(nodes: ConditionalNode[]) {
         for(let node of nodes) {
             // Check if it's a conditional
@@ -11,9 +11,6 @@ export class IfHook extends Hook {
                 const alternate = node.getElse();
 
                 // Replace with an if <div x-if>
-                // @todo this is actually buggy and not working.
-                // For some reason, the children are not being parsed correctly and
-                // are leaving as pug Javascript inside (like each iteration)
                 const conditional = node.replaceWith({
                     type: "Tag",
                     name: "template",

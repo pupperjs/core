@@ -1,3 +1,4 @@
+import { DOMParser } from "./DomParser";
 /**
  * Represents a slot.
  */
@@ -5,7 +6,7 @@ interface Slot {
     /**
      * The comment holding the slot position.
      */
-    container: Element | Comment;
+    container: HTMLElement | Comment;
     /**
      * All fallback nodes
      */
@@ -68,6 +69,7 @@ export declare class PupperComponent {
      * Any component references.
      */
     $refs: Record<string, HTMLElement>;
+    protected parser: DOMParser;
     constructor(
     /**
      * The component properties.
@@ -93,7 +95,7 @@ export declare class PupperComponent {
      */
     renderTemplate(template: string): NodeListOf<ChildNode>;
     /**
-     * Renders a template string into a template tag with a div with [data-rendered-template] attribute.
+     * Renders a template string into a template tag with a div with [pup] attribute.
      * @param string The template string to be rendered.
      * @returns
      */
@@ -101,12 +103,12 @@ export declare class PupperComponent {
     /**
      * Renders the template function into a div tag.
      */
-    render(data?: Record<string, any>): Element;
+    render(data?: Record<string, any>): HTMLElement;
     /**
      * Renders and mounts the template into a given element.
      * @param target The target element where the element will be mounted.
      * @returns
      */
-    mount(target: HTMLElement | Slot): void;
+    mount(target: HTMLElement | Slot): Promise<HTMLElement>;
 }
 export {};

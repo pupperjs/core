@@ -18,11 +18,15 @@ export class PupperToAlpineHook extends Hook {
         "ref": "x-ref",
         "p-cloak": "x-cloak",
         "p-if": "x-if",
-        "p-id": "x-id"
+        "p-id": "x-id",
+
+        "p-render:to" : "x-teleport",
+        "p-render:before": "x-teleport",
+        "p-render:after": "x-teleport"
     };
 
     public lex(tokens: PugToken[]) {
-        return tokens.map((token, index) => {
+        return tokens.map((token) => {
             // We want only attribute tokens
             if (token.type !== "attribute") {
                 return token;
@@ -34,7 +38,10 @@ export class PupperToAlpineHook extends Hook {
                 token.name = PupperToAlpineHook.Attributes[token.name];
             }
 
-            // If it's a p-insert
+            // If it's a p-render
+            if (token.name.startsWith("p-render:")) {
+                console.log(token);
+            }
 
             return token;
         });

@@ -3,7 +3,12 @@ import Plugin, { PugAST } from "../../Plugin";
 
 export class AstNode extends NodeModel {
     constructor(
-        protected node: PugAST
+        protected node: PugAST,
+
+        /**
+         * The plugin related to this AST node.
+         */
+        public plugin: Plugin
     ) {
         super();
         

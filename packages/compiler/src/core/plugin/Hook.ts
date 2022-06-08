@@ -97,10 +97,6 @@ export abstract class Hook {
         line?: number;
         column?: number;
     } = {}) {
-        return PugError(code, message, {
-            ...data,
-            filename: this.plugin.options.filename,
-            src: this.plugin.options.contents
-        } as any);
+        return this.plugin.makeError(code, message, data);
     }
 }

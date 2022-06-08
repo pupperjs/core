@@ -19,9 +19,9 @@ link(href="https://getbootstrap.com/docs/4.0/examples/cover/cover.css", rel="sty
                     |Oh noe! No puppies to show :(
                 else
                     //- Render the puppies and share the onClickPuppy method with it
-                    each puppy in puppies
+                    each index, puppy in puppies
                         .col-5.mb-5
-                            .puppy.card.px-0(:data-id="puppy.id", @click="onClickPuppy(puppy)").text-dark
+                            .puppy.card.px-0(:data-pop="index", :data-id="puppy.id", @click="onClickPuppy(puppy)").text-dark
                                 img.card-img-top(:src="puppy.thumbnail", crossorigin="auto")
 
                                 .card-header

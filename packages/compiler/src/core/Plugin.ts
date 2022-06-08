@@ -1,11 +1,10 @@
-
 import type PugLexer from "pug-lexer";
 import type { PugPlugin, PugToken, PugAST, PugNode, PugNodes, PugNodeAttribute, LexerPlugin, Options } from "pug";
 import type PupperCompiler from "..";
 
 import { Hook } from "./plugin/Hook";
 
-import { IfHook } from "./plugin/hooks/IfHook";
+import { ConditionalHook } from "./plugin/hooks/ConditionalHook";
 import { ForEachHook } from "./plugin/hooks/ForEachHook";
 import { ComponentHook } from "./plugin/hooks/ComponentHook";
 import { PropertyHook } from "./plugin/hooks/PropertyHook";
@@ -20,7 +19,9 @@ import { TagNode } from "./plugin/nodes/TagNode";
 import { NodeModel } from "../model/core/NodeModel";
 import { MixinNode } from "./plugin/nodes/MixinNode";
 import { ConditionalNode } from "./plugin/nodes/ConditionalNode";
-import { InspectNode } from "../util/NodeUtil";
+import pugError from "pug-error";
+import { Pug } from "../typings/pug";
+import { TemplateTagNode } from "./plugin/nodes/tags/TemplateTagNode";
 
 type THookArray = { new(plugin: Plugin): Hook }[];
 
@@ -63,8 +64,8 @@ export { PugToken, PugAST, PugNode, PugNodeAttribute, PugNodes, CompilerNode as 
  */
 export default class Plugin implements PugPlugin {
     public static Hooks: THookArray = [
-        IfHook,
-        ForEachHook,
+        ConditionalHook,
+        //ForEachHook,
         ComponentHook,
         PropertyHook,
         PupperToAlpineHook,
@@ -92,13 +93,29 @@ export default class Plugin implements PugPlugin {
                 return new EachNode(node, parent);
 
             case "Tag":
-                return new TagNode(node, parent);
+                return this.makeTagNode(node, parent);
 
             case "Mixin":
                 return new MixinNode(node, parent);
 
             case "Conditional":
                 return new ConditionalNode(node, parent);
+        }
+    }
+
+    /**
+     * Creates a compiler tag node.
+     * @param node The pug node related to this new node.
+     * @param parent The parent node related to this node.
+     * @returns 
+     */
+    public static makeTagNode(node: Pug.Nodes.TagNode, parent: NodeModel): TagNode {
+        switch(node.name) {
+            default:
+                return new TagNode(node, parent);
+
+            case "template":
+                return new TemplateTagNode(node, parent);
         }
     }
 
@@ -216,24 +233,26 @@ export default class Plugin implements PugPlugin {
      * @param node The node or node array to be parsed.
      * @returns 
      */
-    public parseChildren(node: NodeModel|NodeModel[]) {
+    public parseChildren<TInput extends NodeModel | NodeModel[], TResult>(node: TInput) {
         if (Array.isArray(node)) {
             this.applyFilters("parse", node);
 
             node.forEach((node) => {
                 this.parseChildren(node);
             });
-        } else {
-            node.setChildren(
-                this.applyFilters("parse", node.getChildren())
-            );
 
-            node.getChildren().forEach((child) => {
-                if (child.hasChildren()) {
-                    this.parseChildren(child);
-                }
-            });
+            return node;
         }
+
+        node.setChildren(
+            this.applyFilters("parse", node.getChildren())
+        );
+
+        node.getChildren().forEach((child) => {
+            if (child.hasChildren()) {
+                this.parseChildren(child);
+            }
+        });
 
         return node;
     }
@@ -245,7 +264,7 @@ export default class Plugin implements PugPlugin {
      */
     public parseNodes(ast: PugAST) {
         try {
-            const astNode = new AstNode(ast);
+            const astNode = new AstNode(ast, this);
 
             // Parse the AST children
             this.parseChildren(astNode);
@@ -280,5 +299,36 @@ export default class Plugin implements PugPlugin {
 
     public postCodeGen(code: string): string {
         return this.applyFilters("postCodeGen", code);
+    }
+
+    /**
+     * Makes a compilation error.
+     * @param code The error code.
+     * @param message The error message.
+     * @param data The error data.
+     * @returns 
+     */
+    public makeError(code: string, message: string, data: {
+        line?: number;
+        column?: number;
+    } = {}) {
+        return pugError(code, message, {
+            ...data,
+            filename: this.options.filename,
+            src: this.options.contents
+        } as any);
+    }
+
+    /**
+     * Makes an error with "COMPILATION_ERROR" code.
+     * @param message The error message.
+     * @param data The error data.
+     * @returns 
+     */
+    public makeParseError(message: string, data: {
+        line?: number;
+        column?: number;
+    } = {}) {
+        return this.makeError("COMPILATION_ERROR", message, data);
     }
 }

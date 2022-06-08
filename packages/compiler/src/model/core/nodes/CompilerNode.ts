@@ -1,4 +1,5 @@
-import Plugin, { PugNodes, PugNodeAttribute, TPugNodeTypes, TCompilerNode } from "../../../core/Plugin";
+import Plugin, { PugNodes, PugNodeAttribute, TPugNodeTypes, TCompilerNode, TPugNodesWithTypes } from "../../../core/Plugin";
+import { AstNode } from "../../../core/plugin/nodes/AstNode";
 import { NodeModel } from "../NodeModel";
 
 export interface IParserNode {
@@ -13,7 +14,7 @@ export interface IParserNode {
 
 export type TNodes = PugNodes | CompilerNode | IParserNode;
 
-export class CompilerNode<TNode extends PugNodes = any> extends NodeModel<CompilerNode> {
+export class CompilerNode<TNode extends PugNodes = any> extends NodeModel<CompilerNode<any>> {
     /**
      * Makes a pug attribute node.
      * @param key The attribute name.
@@ -22,6 +23,7 @@ export class CompilerNode<TNode extends PugNodes = any> extends NodeModel<Compil
      */
     public static makePugNodeAttribute(key: string, value: string | boolean | number): PugNodeAttribute {
         if (typeof value === "string") {
+            value = value.replace(/"/g, "\\\"");
             value = `"${value}"`;
         }
 
@@ -37,7 +39,7 @@ export class CompilerNode<TNode extends PugNodes = any> extends NodeModel<Compil
      * @param node The node to be parsed.
      * @returns 
      */
-    public static parseNodeIntoPugNode(node: IParserNode) {
+    public static parseNodeIntoPugNode<TNode extends IParserNode>(node: TNode): TPugNodesWithTypes[TNode["type"]] {
         if (!("type" in node)) {
             throw new Error("No node type was given.");
         }
@@ -80,7 +82,7 @@ export class CompilerNode<TNode extends PugNodes = any> extends NodeModel<Compil
             delete finalNode.children;
         }
 
-        return finalNode;
+        return finalNode as any;
     }
 
     /**
@@ -97,7 +99,12 @@ export class CompilerNode<TNode extends PugNodes = any> extends NodeModel<Compil
         /**
          * The parent array that contains this node.
          */ 
-        public parent?: NodeModel
+        public parent?: NodeModel,
+
+        /**
+         * The plugin related to this compiler node.
+         */
+        protected plugin?: Plugin
     ) {
         super(parent);
 
@@ -109,6 +116,20 @@ export class CompilerNode<TNode extends PugNodes = any> extends NodeModel<Compil
                     Plugin.createNode(node, this) as any
                 )
             });
+        }
+
+        // If no plugin was given
+        if (!plugin) {
+            // Try retrieving the parent plugin
+            let parent = this.parent;
+
+            do {
+                if (parent?.parent) {
+                    parent = parent.parent;
+                }
+            } while(!(parent instanceof AstNode));
+
+            this.plugin = parent.plugin;
         }
     }
 
@@ -250,10 +271,22 @@ export class CompilerNode<TNode extends PugNodes = any> extends NodeModel<Compil
     }
 
     /**
+     * Makes a parsing error for this node.
+     * @param message The error message.
+     * @returns 
+     */
+    public makeParseError(message: string) {
+        return this.plugin.makeParseError(message, {
+            line: this.getLine(),
+            column: this.getColumn()
+        });
+    }
+
+    /**
      * Converts the node back into a pug node.
      * @returns 
      */
-    public toPugNode() {
+    public toPugNode(): TNode | PugNodes {
         const finalNode = { ...this.pugNode };
 
         if (this.hasChildren() || this.pugNode.block) {        

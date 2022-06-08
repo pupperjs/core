@@ -2,7 +2,7 @@ import { IPluginNode } from "../../Plugin";
 import { Hook } from "../Hook";
 import { TagNode } from "../nodes/TagNode";
 import { ScriptParser } from "./component/ScriptParser";
-import { IfHook } from "./IfHook";
+import { ConditionalHook } from "./ConditionalHook";
 import { StyleAndScriptHook } from "./StyleAndScriptHook";
 
 const DefaultExportSymbol = Symbol("ExportedComponent");
@@ -17,7 +17,7 @@ export interface IComponent {
 }
 
 export class ComponentHook extends Hook {
-    public $after = [IfHook, StyleAndScriptHook];
+    public $after = [ConditionalHook, StyleAndScriptHook];
 
     /**
      * The imports that will later be putted into the template header

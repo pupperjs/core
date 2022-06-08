@@ -1,4 +1,5 @@
 import Alpine from "alpinejs";
+import { DOMParser } from "./DomParser";
 
 /**
  * Represents a slot.
@@ -7,7 +8,7 @@ interface Slot {
     /**
      * The comment holding the slot position.
      */
-    container: Element | Comment;
+    container: HTMLElement | Comment;
 
     /**
      * All fallback nodes
@@ -88,6 +89,8 @@ export class PupperComponent {
      * Any component references.
      */
     public $refs: Record<string, HTMLElement> = {};
+
+    protected parser: DOMParser;
 
     constructor(
         /**
@@ -181,13 +184,15 @@ export class PupperComponent {
     }
 
     /**
-     * Renders a template string into a template tag with a div with [data-rendered-template] attribute.
+     * Renders a template string into a template tag with a div with [pup] attribute.
      * @param string The template string to be rendered.
      * @returns 
      */
     private renderStringToTemplate(string: string): HTMLTemplateElement {
         const renderContainer = document.createElement("template");
-        renderContainer.innerHTML = `<div data-rendered-template>${string}</div>`;
+
+        // @todo this div needs to be removed
+        renderContainer.innerHTML = `<div pup>${string}</div>`;
 
         return renderContainer;
     }
@@ -244,7 +249,7 @@ export class PupperComponent {
             ref.removeAttribute("ref");
         }
 
-        const container = renderContainer.content.children[0];
+        const container = renderContainer.content.children[0] as HTMLElement;
 
         return container;
     }
@@ -254,7 +259,7 @@ export class PupperComponent {
      * @param target The target element where the element will be mounted.
      * @returns 
      */
-    public mount(target: HTMLElement | Slot) {
+    public async mount(target: HTMLElement | Slot) {
         this.$identifier = "p_" + String((Math.random() + 1).toString(36).substring(2));
 
         const rendered = this.render();
@@ -272,21 +277,25 @@ export class PupperComponent {
             };
         });
 
+        // If it's targeting a slot
         if (!(target instanceof HTMLElement)) {
-            target.container.replaceWith(rendered);
-            target.container = rendered;
+            const replaced = document.createElement("div");
+            replaced.setAttribute("p-slot", "1");
+
+            target.container.replaceWith(replaced);
+            this.parser = new DOMParser(replaced);
+            
         } else {
-            target.appendChild(rendered);
+            // Append it to the virtual DOM
+            this.parser = new DOMParser(target);
         }
 
-        // Initialize Alpine for it
-        Alpine.initTree(rendered);
-
-        // Remove the identifier
-        //rendered.removeAttribute("x-data");
+        const mounted = await this.parser.appendChild(rendered);
 
         // Save a reference to the internal Alpine data proxy
         // @ts-ignore
-        this.$data = rendered._x_dataStack[0];      
+        this.$data = mounted._x_dataStack[0];
+
+        return mounted;
     }
 }
