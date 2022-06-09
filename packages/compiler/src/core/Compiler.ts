@@ -168,6 +168,20 @@ export class PupperCompiler {
         return rendered;///*js*/`function $h(h) { return ${htmlToHs({ syntax: "h" })(rendered)}; }`;
     }
 
+    /**
+     * Sets the shared data to this compiler plugin.
+     * @param data The data to be shared with the plugin.
+     * @returns 
+     */
+    public setSharedData(data: any) {
+        this.plugin.sharedData = data;
+        return this;
+    }
+
+    /**
+     * Retrieves the name of the template being currently compiled.
+     * @returns 
+     */
     public getFileName() {
         return this.options.fileName || this.options.pug.filename || "template.pupper";
     }

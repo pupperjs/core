@@ -59,7 +59,7 @@ export class ScriptParser {
             this.processComponentPupperEvents();
         }
 
-        if (this.component.implementation.events.length) {
+        if (this.component.implementation.listeners.length) {
             this.processComponentCustomEvents();
         }
 
@@ -135,7 +135,7 @@ export class ScriptParser {
         const methodsContainer = this.findOrCreateComponentObj("methods");
 
         // Retrieve all function declaration expressions
-        this.component.implementation.events.forEach((event) => {
+        this.component.implementation.listeners.forEach((event) => {
             const fn = methodsContainer.addMethod({
                 name: event.name,
                 parameters: event.parameters

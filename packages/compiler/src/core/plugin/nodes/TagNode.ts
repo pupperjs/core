@@ -24,8 +24,17 @@ export class TagNode extends BlockedCompilerNode<Pug.Nodes.TagNode> {
      * @param name The attribute name to be retrieved.
      * @returns 
      */
-    public getAttribute(name: string) {
+    public getRawAttribute(name: string) {
         return this.pugNode.attrs.find((attr) => attr.name === name)?.val as any;
+    }
+
+    /**
+     * Retrieves a node attribute by name.
+     * @param name The attribute name to be retrieved.
+     * @returns 
+     */
+    public getAttribute(name: string) {
+        return this.getAttributes().find((attr) => attr.name === name)?.val.replace(/['"]/g, "").trim();
     }
 
     /**
@@ -58,6 +67,22 @@ export class TagNode extends BlockedCompilerNode<Pug.Nodes.TagNode> {
     }
 
     /**
+     * Removes an attribute by it's name.
+     * @param name The name of the attribute to be removed.
+     * @returns 
+     */
+    public removeAttribute(name: string) {
+        const removed = this.getAttribute(name);
+
+        this.pugNode.attrs.splice(
+            this.pugNode.attrs.findIndex((attr) => attr.name === name),
+            1
+        );
+
+        return removed;
+    }
+
+    /**
      * Retrieves the raw node attributes.
      * @returns 
      */
@@ -70,12 +95,28 @@ export class TagNode extends BlockedCompilerNode<Pug.Nodes.TagNode> {
      * @returns 
      */
     public getAttributes() {
-        return this.pugNode.attrs.map((attr) => {
-            return {
-                name: attr.name,
-                val: String(attr.val).replace(/^((['"`])(?<escaped>.*?)\2$)|(?<nonescaped>.+?$)/, (match, ignored1, ignored2, p3, p4) => p4 || p3)
-            };
-        })
+        return Object.values(
+            this.pugNode.attrs.reduce((carrier, attr) => {
+                // If this class hasn't been added to the attributes yet
+                if (!(attr.name in carrier)) {
+                    // Add it
+                    carrier[attr.name] = {
+                        name: attr.name,
+                        val: ""
+                    };
+                }
+
+                carrier[attr.name].val += String(attr.val).replace(/^((['"`])(?<escaped>.*?)\2$)|(?<nonescaped>.+?$)/, (match, ignored1, ignored2, p3, p4) => p4 || p3) + " ";
+
+                return carrier;
+            }, {} as Record<string, {
+                name: string;
+                val: string
+            }>)
+        ).map((attr) => {
+            attr.val = attr.val.trim();
+            return attr;
+        });
     }
 
     /**
@@ -91,7 +132,7 @@ export class TagNode extends BlockedCompilerNode<Pug.Nodes.TagNode> {
      * @returns 
      */
     public getClasses() {
-        return this.getRawClasses().replace(/['"]/g, "").split(" ");
+        return this.getAttribute("class").replace(/['"]/g, "").split(" ");
     }
 
     /**

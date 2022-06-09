@@ -3,7 +3,7 @@ style
         color: white;
     }
 
-style:sass
+style(lang="sass")
     .something2 {
         color: white;
 
@@ -17,12 +17,7 @@ script
         
     })
 
-script:ts
-    interface ITest {
-
-    }
-
-script:typescript
+script(lang="ts")
     enum ETest {
 
     }
@@ -34,6 +29,12 @@ template:html
 
 import(ImportedComponent from "test")
 
+data
+    number = 1
+    obj = {
+        itsAnObject: true
+    }
+
 template
     ImportedComponent
         template:slot-name
@@ -41,3 +42,10 @@ template
 
     slot:slot-name
         |Default slot content
+
+implementation
+    when#something
+    listener#listenerName.eventThatIsListening.anotherEvent
+    event#customEvent
+
+    #onClick(something)

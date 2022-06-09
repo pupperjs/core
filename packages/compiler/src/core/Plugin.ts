@@ -8,6 +8,7 @@ import { PupperToAlpineHook } from "./plugin/hooks/PupperToAlpineHook";
 import { ImportHook } from "./plugin/hooks/ImportHook";
 import { CompilerNode } from "../model/core/nodes/CompilerNode";
 import { StyleAndScriptHook } from "./plugin/hooks/StyleAndScriptHook";
+import { ListenerHook } from "./plugin/hooks/ListenerHook";
 
 import { AstNode } from "./plugin/nodes/AstNode";
 import { EachNode } from "./plugin/nodes/EachNode";
@@ -19,6 +20,7 @@ import { Pug } from "../typings/pug";
 import { TemplateTagNode } from "./plugin/nodes/tags/TemplateTagNode";
 import { PrepareComponents } from "./plugin/phases/PrepareComponentsHook";
 import { CompilationType, PupperCompiler } from "./Compiler";
+
 import lex from "pug-lexer";
 
 type THookConstructor = { new(plugin: Plugin): Hook };
@@ -67,7 +69,8 @@ export default class Plugin implements PugPlugin {
         PropertyHook,
         PupperToAlpineHook,
         ImportHook,
-        StyleAndScriptHook
+        StyleAndScriptHook,
+        ListenerHook
     ];
 
     /**
@@ -132,7 +135,7 @@ export default class Plugin implements PugPlugin {
     /**
      * Any data to be shared between hooks and phases.
      */
-    public sharedData: Record<any, any> = {};
+    public sharedData: Record<string, any> = {};
 
     public lex: LexerPlugin;
 

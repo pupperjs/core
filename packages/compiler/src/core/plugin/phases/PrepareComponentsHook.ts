@@ -1,4 +1,4 @@
-import { IPluginNode, PugToken } from "../../Plugin";
+import { IPluginNode } from "../../Plugin";
 import { Hook } from "../Hook";
 import { TagNode } from "../nodes/TagNode";
 import { ScriptParser } from "../hooks/component/ScriptParser";
@@ -6,7 +6,7 @@ import { AstNode } from "../nodes/AstNode";
 import { PupperCompiler } from "../../Compiler";
 import { CompilerNode } from "../../../model/core/nodes/CompilerNode";
 
-const DefaultExportSymbol = Symbol("ExportedComponent");
+export const DefaultExportSymbol = Symbol("ExportedComponent");
 
 interface IImplementation {
     name: string;
@@ -23,7 +23,7 @@ export interface IComponent {
     implementation: {
         methods?: IImplementation[];
         when?: IImplementation[];
-        events?: (IImplementation & {
+        listeners?: (IImplementation & {
             covers: string[]   
         })[];
     },
@@ -46,6 +46,9 @@ export class PrepareComponents extends Hook {
     protected exportedData: Record<string, string> = {};
 
     public beforeStart(code: string) {
+        this.plugin.sharedData.components = {};
+        this.components = this.plugin.sharedData.components;
+
         const lines = code.replace(/\r\n/g, "\n").split(/\n/g);
         const identation = this.plugin.detectIdentation();
         const startWithRegExp = new RegExp("^" + identation + "(?!" + identation + ")");
@@ -93,8 +96,8 @@ export class PrepareComponents extends Hook {
                         // Replace it with the internal "p-when"
                         identifier = identifier.replace("when", "event-when");
                     } else
-                    // If it's not an event
-                    if (!identifier.startsWith("event")) {
+                    // If it's not an event or a listener
+                    if (!identifier.startsWith("event") && !identifier.startsWith("listener")) {
                         // Assume it's a method then
                         identifier = identifier.replace(identifier, "method" + identifier);
                     }
@@ -135,12 +138,8 @@ export class PrepareComponents extends Hook {
                 continue;
             }
 
-            // Parse them as a component
-            // Parse the component
+            // Parse as a component
             const component = this.parseComponentNode(node.parent);
-
-            // Save the component
-            this.components[component.name] = component;
 
             break;
         }
@@ -197,7 +196,7 @@ export class PrepareComponents extends Hook {
             implementation: {
                 methods: [],
                 when: [],
-                events: []
+                listeners: []
             },
             template: null,
             script: null,
@@ -206,8 +205,11 @@ export class PrepareComponents extends Hook {
             exported: isRootComponent
         };
 
+        // Save the component
+        this.components[component.name] = component;
+
         // If the component is not exported and has no name
-        if (!component.exported && (!name || !name.length)) {
+        if (!component.exported && !name) {
             throw this.compiler.makeParseError("Scoped components must have a name.", {
                 line: node.getLine() || 1,
                 column: node.getColumn()
@@ -215,34 +217,9 @@ export class PrepareComponents extends Hook {
         }
 
         // If the component has no name
-        if (!name || !name.length) {
+        if (!name) {
             // Assume it's the default export
             component.name = DefaultExportSymbol;
-        }
-
-        // If has a template
-        if (template) {
-            //this.plugin.parseChildren(template, true);
-
-            let lines = this.plugin.compiler.contents.split("\n");
-
-            const nextNodeAfterTemplate = template.getNextNode();
-
-            lines = lines.slice(
-                template.getLine(),
-                nextNodeAfterTemplate ? nextNodeAfterTemplate.getLine() - 1 : (node.hasNext() ? node.getNextNode().getLine() - 1 : lines.length)
-            );
-
-            // Detect identation
-            const identation = this.plugin.detectIdentation();
-
-            const contents = lines
-                // Replace the first identation
-                .map((line) => line.replace(identation, ""))
-                .join("\n");
-
-            const templateAsString = new PupperCompiler(this.compiler.options).compileTemplate(contents);
-            component.template = templateAsString;
         }
 
         // If has a script
@@ -262,77 +239,126 @@ export class PrepareComponents extends Hook {
 
         // If has methods
         if (implementation) {
-            // Iterate over all children
-            implementation.getChildren().forEach((child) => {
-                // Ignore comments
-                if (child.isType("Comment")) {
-                    return;
-                }
+            component.implementation = this.consumeAsImplementation(implementation);
+        }
 
-                // If it's not a tag
-                if (!(child instanceof TagNode)) {
-                    throw this.plugin.compiler.makeParseError("The implementation tag should only contain methods and events, found a " + child.getType() + ".", {
-                        line: child.getLine(),
-                        column: child.getColumn()
-                    });
-                }
+        // If has a template
+        // ATTENTION: templates needs to be parsed after everything as already parsed.
+        if (template) {
+            let lines = this.plugin.compiler.contents.split("\n");
 
-                // If it isn't an event or method
-                if (!["method", "event", "event-when"].includes(child.getName())) {
-                    throw this.plugin.compiler.makeParseError("The implementation tag should only contain methods, found an invalid tag " + child.getName() + ".", {
-                        line: child.getLine(),
-                        column: child.getColumn()
-                    });
-                }
+            const nextNodeAfterTemplate = template.getNextNode();
 
-                switch(child.getName()) {
-                    // If it's a "method"
-                    case "method":
-                        // Add it to the methods
-                        component.implementation.methods.push({
-                            name: child.getId(),
-                            parameters: child.getRawAttributes().filter((attr) => attr.name !== "class" && attr.name !== "id").map((attr) => ({
-                                name: attr.name,
-                                initializer: attr.val === "undefined" ? undefined : String(attr.val)
-                            })),
-                            body: this.consumeChildrenAsString(child)
-                        });
-                    break;
+            lines = lines.slice(
+                template.getLine(),
+                nextNodeAfterTemplate ? nextNodeAfterTemplate.getLine() - 1 : (node.hasNext() ? node.getNextNode().getLine() - 1 : lines.length)
+            );
 
-                    // If it's a "when"
-                    case "event-when":
-                        // Add it to the when implementations
-                        component.implementation.when.push({
-                            name: child.getId(),
-                            parameters: child.getAttributes().map((attr) => ({
-                                name: attr.name,
-                                initializer: attr.val
-                            })),
-                            body: this.consumeChildrenAsString(child)
-                        });
-                    break;
+            // Detect identation
+            const identation = this.plugin.detectIdentation();
 
-                    // If it's an "event"
-                    case "event":
-                        // Add it to the events implementations
-                        component.implementation.events.push({
-                            // Events has the prefix "$$p_" to prevent conflicts.
-                            name: "$$p_" + child.getId(),
-                            parameters: child.getAttributes().filter((attr) => attr.name !== "class" && attr.name !== "id").map((attr) => ({
-                                name: attr.name,
-                                initializer: attr.val
-                            })),
-                            body: this.consumeChildrenAsString(child),
-                            covers: child.getClasses()
-                        });
-                    break;
-                }
-            });
+            const contents = lines
+                // Replace the first identation
+                .map((line) => line.replace(identation, ""))
+                .join("\n");
+
+            const compiler = new PupperCompiler(this.plugin.options);
+            compiler.setSharedData(this.plugin.sharedData);
+
+            const templateAsString = compiler.compileTemplate(contents);
+            component.template = templateAsString;
         }
 
         return component;
     }
 
+    /**
+     * Consumes all children nodes from a tag node into a component implementation.
+     * @param node The node to be consumed.
+     * @returns 
+     */
+    protected consumeAsImplementation(node: TagNode) {
+        const implementations: IComponent["implementation"] = {
+            methods: [],
+            when: [],
+            listeners: []
+        };
+
+        // Iterate over all children
+        node.getChildren().forEach((child) => {
+            // Ignore comments
+            if (child.isType("Comment")) {
+                return;
+            }
+
+            // If it's not a tag
+            if (!(child instanceof TagNode)) {
+                throw this.plugin.compiler.makeParseError("The implementation tag should only contain methods and events, found a " + child.getType() + ".", {
+                    line: child.getLine(),
+                    column: child.getColumn()
+                });
+            }
+
+            // If it isn't an event or method
+            if (!["method", "event", "event-when", "listener"].includes(child.getName())) {
+                throw this.plugin.compiler.makeParseError("The implementation tag should only contain methods, found an invalid tag " + child.getName() + ".", {
+                    line: child.getLine(),
+                    column: child.getColumn()
+                });
+            }
+
+            switch(child.getName()) {
+                // If it's a "method"
+                case "method":
+                    // Add it to the methods
+                    implementations.methods.push({
+                        name: child.getId(),
+                        parameters: child.getRawAttributes().filter((attr) => attr.name !== "class" && attr.name !== "id").map((attr) => ({
+                            name: attr.name,
+                            initializer: attr.val === "undefined" ? undefined : String(attr.val)
+                        })),
+                        body: this.consumeChildrenAsString(child)
+                    });
+                break;
+
+                // If it's a "when"
+                case "event-when":
+                    // Add it to the when implementations
+                    implementations.when.push({
+                        name: child.getId(),
+                        parameters: child.getAttributes().map((attr) => ({
+                            name: attr.name,
+                            initializer: attr.val
+                        })),
+                        body: this.consumeChildrenAsString(child)
+                    });
+                break;
+
+                // If it's a "listener"
+                case "listener":
+                    // Add it to the listeners implementations
+                    implementations.listeners.push({
+                        // Listeners has the prefix "$$p_" to prevent conflicts.
+                        name: "$$p_" + child.getId(),
+                        parameters: child.getAttributes().filter((attr) => attr.name !== "class" && attr.name !== "id").map((attr) => ({
+                            name: attr.name,
+                            initializer: attr.val
+                        })),
+                        body: this.consumeChildrenAsString(child),
+                        covers: child.getClasses()
+                    });
+                break;
+            }
+        });
+
+        return implementations;
+    }
+
+    /**
+     * Consumes all children nodes values from a node into a string.
+     * @param node The node to be consumed.
+     * @returns 
+     */
     protected consumeChildrenAsString(node: CompilerNode) {
         this.plugin.parseChildren(node);
         return node.getChildren().map((child) => child.getProp("val")).join("").trimEnd();

@@ -40,7 +40,7 @@ export class ImportHook extends Hook {
                 let match = fullImport.match(ImportHook.INLINE_IMPORT_REGEX);
 
                 if (!match) {
-                    throw this.makeError("INVALID_IMPORT", "Invalid import expression.", {
+                    throw this.compiler.makeParseError("Invalid import expression.", {
                         line: currentToken.loc.line,
                         column: currentToken.loc.column
                     });
@@ -92,7 +92,7 @@ export class ImportHook extends Hook {
                 if (this.plugin.sharedData.imports?.[node.getProp("name")] !== undefined) {
                     // If has a body
                     if (node.hasChildren()) {
-                        throw this.makeError("IMPORT_TAG_WITH_BODY", "Imported tags can't have a body.", {
+                        throw this.compiler.makeParseError("Imported tags can't have a body.", {
                             line: node.getLine(),
                             column: node.getColumn()
                         });

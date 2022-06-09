@@ -46,7 +46,7 @@ template
                         slot(name="slot")
                         slot(name="slot2")
 
-                footer.mastfoot.mt-auto
+                footer.mastfoot.mt-auto(p-listener="footerListener")
                     .inner
                         p
                             |Cover template for <a href="https://getbootstrap.com/">Bootstrap</a>, by <a href="https://twitter.com/mdo">@mdo</a>
@@ -88,4 +88,4 @@ implementation
         console.log("The component was mounted.");
 
     //- Listening to multiple events with one ID'ed listener.
-    event#listener.keyUp.keyPress
+    listener#footerListener.keyup.keypress
