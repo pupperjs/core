@@ -5,9 +5,9 @@ export class PropertyHook extends Hook {
     /**
      * The regex to test if an expression is a valid reactive item
      */
-    public static REGEX = /\{(?<tag>\{|-) ?(?<exp>(?:[\w+]|\.)+) ?(\}|-)\}/;
+    public REGEX = /\{(?<tag>\{|-) ?(?<exp>(?:[\w+]|\.)+) ?(\}|-)\}/;
 
-    public static testExpression(exp: string) {
+    public testExpression(exp: string) {
         return this.REGEX.test(exp);
     }
 
@@ -19,9 +19,9 @@ export class PropertyHook extends Hook {
             }
 
             // Check if it's a reactive item
-            if (token.mustEscape && PropertyHook.REGEX.test(token.val)) {
+            if (token.mustEscape && this.REGEX.test(token.val)) {
                 // Extract the token value
-                const result = token.val.match(PropertyHook.REGEX).groups;
+                const result = token.val.match(this.REGEX).groups;
                 const value = result.exp.replace(/\"/g, "\\\"");
 
                 const fn = result.tag === "{" ? "escape" : "literal";

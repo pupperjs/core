@@ -64,39 +64,40 @@ export abstract class Hook {
         
     }
 
+    public get compiler() {
+        return this.plugin.compiler;
+    }
+
     /**
      * Prepares this hook filters.
      */
     public prepareFilters() {
+        if ("testExpression" in this) {
+            this.plugin.addFilter("testExpression", this.testExpression.bind(this), this);
+        }
+
         if ("beforeStart" in this) {
-            this.plugin.addFilter("preLex", this.beforeStart.bind(this));
+            this.plugin.addFilter("preLex", this.beforeStart.bind(this), this);
         }
 
         if ("lex" in this) {
-            this.plugin.addFilter("lex", this.lex.bind(this));
+            this.plugin.addFilter("lex", this.lex.bind(this), this);
         }
 
         if ("parse" in this) {
-            this.plugin.addFilter("parse", this.parse.bind(this));
+            this.plugin.addFilter("parse", this.parse.bind(this), this);
         }
 
         if ("beforeCompile" in this) {
-            this.plugin.addFilter("preCodeGen", this.beforeCompile.bind(this));
+            this.plugin.addFilter("preCodeGen", this.beforeCompile.bind(this), this);
         }
 
         if ("afterCompile" in this) {
-            this.plugin.addFilter("postCodeGen", this.afterCompile.bind(this));
+            this.plugin.addFilter("postCodeGen", this.afterCompile.bind(this), this);
         }
     }
 
     protected makeNode(node: PugNodes, parent: CompilerNode) {
         return Plugin.createNode(node, parent);
-    }
-
-    protected makeError(code: string, message: string, data: {
-        line?: number;
-        column?: number;
-    } = {}) {
-        return this.plugin.makeError(code, message, data);
     }
 }

@@ -1,7 +1,8 @@
 import { NodeModel } from "../../../model/core/NodeModel";
+import { CompilerNode } from "../../../model/core/nodes/CompilerNode";
 import Plugin, { PugAST } from "../../Plugin";
 
-export class AstNode extends NodeModel {
+export class AstNode extends CompilerNode {
     constructor(
         protected node: PugAST,
 
@@ -10,11 +11,11 @@ export class AstNode extends NodeModel {
          */
         public plugin: Plugin
     ) {
-        super();
-        
+        super(node, null, plugin);
+
         node.nodes.forEach((node) => {
             this.children.push(
-                Plugin.createNode(node, this)
+                Plugin.createNode(node, this) as any
             );
         });
     }

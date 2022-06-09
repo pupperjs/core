@@ -1,50 +1,80 @@
-//- Stylesheets
-link(href="https://getbootstrap.com/docs/4.0/dist/css/bootstrap.min.css", rel="stylesheet")
-link(href="https://getbootstrap.com/docs/4.0/examples/cover/cover.css", rel="stylesheet")
+template
+    .container
+        //- Stylesheets
+        link(href="https://getbootstrap.com/docs/4.0/dist/css/bootstrap.min.css", rel="stylesheet")
+        link(href="https://getbootstrap.com/docs/4.0/examples/cover/cover.css", rel="stylesheet")
 
-.text-center
-    .cover-container.d-flex.h-100.p-3.mx-auto.flex-column
-        header.masthead.mb-auto 
-            .inner
-                h3.masthead-brand={{ page.title }}
+        .text-center
+            .cover-container.d-flex.h-100.p-3.mx-auto.flex-column
+                header.masthead.mb-auto 
+                    .inner
+                        h3.masthead-brand={{ page.title }}
 
-        //- Main contents
-        main.inner.cover.my-3(role="main")
-            h1.cover-heading={{ page.description }}
+                //- Main contents
+                main.inner.cover.my-3(role="main")
+                    h1.cover-heading={{ page.description }}
 
-            p.lead={{ page.lead }}
+                    p.lead={{ page.lead }}
 
-            .row.mt-5.justify-content-around.align-items-center
-                if puppies === undefined || puppies.length === 0
-                    |Oh noe! No puppies to show :(
-                else
-                    //- Render the puppies and share the onClickPuppy method with it
-                    each index, puppy in puppies
-                        .col-5.mb-5
-                            .puppy.card.px-0(:data-pop="index", :data-id="puppy.id", @click="onClickPuppy(puppy)").text-dark
-                                img.card-img-top(:src="puppy.thumbnail", crossorigin="auto")
+                    .row.mt-5.justify-content-around.align-items-center
+                        if puppies === undefined || puppies.length === 0
+                            |Oh noe! No puppies to show :(
+                        else
+                            //- Render the puppies and share the onClickPuppy method with it
+                            each index, puppy in puppies
+                                .col-5.mb-5
+                                    .puppy.card.px-0(:data-pop="index", :data-id="puppy.id", @click="onClickPuppy(puppy)").text-dark
+                                        img.card-img-top(:src="puppy.thumbnail", crossorigin="auto")
 
-                                .card-header
-                                    h5.card-title={{ puppy.title }}
-                                    small.text-muted|Served by pupper.js
+                                        .card-header
+                                            h5.card-title={{ puppy.title }}
+                                            small.text-muted|Served by pupper.js
 
-                                .card-body
-                                    ={- puppy.description -}
+                                        .card-body
+                                            ={- puppy.description -}
 
-                                    if puppy.shibe === true
-                                        p.text-warning|shibe!!!
+                                            if puppy.shibe === true
+                                                p.text-warning|shibe!!!
 
-                                    if puppy.properties
-                                        each property in puppy.properties
-                                            span.badge.badge-info={{property}}
+                                            if puppy.properties
+                                                each property in puppy.properties
+                                                    span.badge.badge-info={{property}}
 
-            div 
-                |Testing slots: 
+                    div 
+                        |Testing slots: 
 
-                slot(name="slot")
-                slot(name="slot2")
+                        slot(name="slot")
+                        slot(name="slot2")
 
-        footer.mastfoot.mt-auto
-            .inner
-                p
-                    |Cover template for <a href="https://getbootstrap.com/">Bootstrap</a>, by <a href="https://twitter.com/mdo">@mdo</a>
+                footer.mastfoot.mt-auto
+                    .inner
+                        p
+                            |Cover template for <a href="https://getbootstrap.com/">Bootstrap</a>, by <a href="https://twitter.com/mdo">@mdo</a>
+
+data
+    page = {
+        title: "pupper.js is awesome!",
+        description: "I use pupper.js because I love puppies!",
+        lead: "Also we love puppers, shiberinos and other doggos too! 🐶"
+    }
+
+    puppies = [
+        {
+            id: 1,
+            title: "A cutie pup",
+            description: "Look at this cutie",
+            thumbnail: "https://placedog.net/800",
+            properties: ["beautiful", "doge"]
+        },
+        {
+            id: 2,
+            title: "Another cute pup",
+            description: "Isn't it a cute doggo?!",
+            thumbnail: "https://placedog.net/400",
+            properties: ["wow", "much woof"]
+        }
+    ]
+
+methods
+    onClickPuppy(puppy)
+        alert("You clicked puppy " + puppy.id + "! :D");

@@ -1,22 +1,21 @@
 import ExportedComponent(from="./ExportedComponent.pupper")
 
-component(export)
-    template
+template
+    div
         div
-            div
-                |This component has an imported component!
-                ExportedComponent()
+            |This component has an imported component!
+            ExportedComponent()
 
-            div
-                ="Also mounted into a slot:"
-                slot(name="slot")
+        div
+            ="Also mounted into a slot:"
+            slot(name="slot")
 
-    script(lang="ts", type="text/javascript").
-        import Pupper from "@pupperjs/renderer";
+script(lang="ts", type="text/javascript")
+    import Pupper from "@pupperjs/renderer";
 
-        export default Pupper.defineComponent({
-            mounted() {
-                console.log("Rendering the exported component into slot \"slot\"");
-                ExportedComponent.mount(this.$slots.slot);
-            }
-        });
+    export default Pupper.defineComponent({
+        mounted() {
+            console.log("Rendering the exported component into slot \"slot\"");
+            ExportedComponent.mount(this.$slots.slot);
+        }
+    });

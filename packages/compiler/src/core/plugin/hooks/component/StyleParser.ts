@@ -1,4 +1,4 @@
-import { IComponent } from "../ComponentHook";
+import { IComponent } from "../../phases/PrepareComponentsHook";
 
 export class StyleParser {
     constructor(

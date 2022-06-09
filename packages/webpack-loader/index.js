@@ -16,9 +16,7 @@ module.exports = function(source, options) {
         source,
         {
             ...options,
-            pug: {
-                filename: this.resourcePath
-            }
+            fileName: this.resourcePath
         }
     );
 

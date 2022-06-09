@@ -1,9 +1,10 @@
 import type pug from "pug";
 import type PugLexer from "pug-lexer";
+
 import { LexTokenType } from "pug-lexer";
 
 export declare namespace Pug {
-    export interface LexerPlugin {
+    export interface LexerPlugin extends Record<string, CallableFunction> {
         /**
          * Checks if a given expression is valid
          * @param lexer The pug lexer instance

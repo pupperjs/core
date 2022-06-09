@@ -1,5 +1,6 @@
 import Plugin, { PugNodes, PugNodeAttribute, TPugNodeTypes, TCompilerNode, TPugNodesWithTypes } from "../../../core/Plugin";
 import { AstNode } from "../../../core/plugin/nodes/AstNode";
+import { TagNode } from "../../../core/plugin/nodes/TagNode";
 import { NodeModel } from "../NodeModel";
 
 export interface IParserNode {
@@ -127,9 +128,9 @@ export class CompilerNode<TNode extends PugNodes = any> extends NodeModel<Compil
                 if (parent?.parent) {
                     parent = parent.parent;
                 }
-            } while(!(parent instanceof AstNode));
+            } while(parent.parent !== null);
 
-            this.plugin = parent.plugin;
+            this.plugin = (parent as AstNode).plugin;
         }
     }
 
@@ -147,8 +148,8 @@ export class CompilerNode<TNode extends PugNodes = any> extends NodeModel<Compil
      * @param name The children node tag name.
      * @returns 
      */
-    public findFirstChildByTagName(name: string) {
-        return this.children.find((child) => child.isType("Tag") && child.isName(name));
+    public findFirstChildByTagName(name: string): TagNode {
+        return this.children.find((child) => child.isType("Tag") && child.isName(name)) as TagNode;
     }
 
     /**

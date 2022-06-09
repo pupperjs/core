@@ -3,7 +3,12 @@
     "compilerOptions": {
         "target": "esnext",
         "outDir": "./out",
-        "declarationDir": "./types"
+        "declarationDir": "./types",
+        "typeRoots": [
+            "./src/typings",
+            "./node_modules/@types",
+            "../../node_modules/@types"
+        ]
     },
     "include": ["./src/**/*.ts"],
     "exclude": ["node_modules"],

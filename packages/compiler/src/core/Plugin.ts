@@ -1,12 +1,8 @@
-import type PugLexer from "pug-lexer";
-import type { PugPlugin, PugToken, PugAST, PugNode, PugNodes, PugNodeAttribute, LexerPlugin, Options } from "pug";
-import type PupperCompiler from "..";
+import type { PugPlugin, PugToken, PugAST, PugNode, PugNodes, PugNodeAttribute, LexerPlugin } from "pug";
 
 import { Hook } from "./plugin/Hook";
 
 import { ConditionalHook } from "./plugin/hooks/ConditionalHook";
-import { ForEachHook } from "./plugin/hooks/ForEachHook";
-import { ComponentHook } from "./plugin/hooks/ComponentHook";
 import { PropertyHook } from "./plugin/hooks/PropertyHook";
 import { PupperToAlpineHook } from "./plugin/hooks/PupperToAlpineHook";
 import { ImportHook } from "./plugin/hooks/ImportHook";
@@ -19,11 +15,14 @@ import { TagNode } from "./plugin/nodes/TagNode";
 import { NodeModel } from "../model/core/NodeModel";
 import { MixinNode } from "./plugin/nodes/MixinNode";
 import { ConditionalNode } from "./plugin/nodes/ConditionalNode";
-import pugError from "pug-error";
 import { Pug } from "../typings/pug";
 import { TemplateTagNode } from "./plugin/nodes/tags/TemplateTagNode";
+import { PrepareComponents } from "./plugin/phases/PrepareComponentsHook";
+import { CompilationType, PupperCompiler } from "./Compiler";
+import lex from "pug-lexer";
 
-type THookArray = { new(plugin: Plugin): Hook }[];
+type THookConstructor = { new(plugin: Plugin): Hook };
+type THookArray = THookConstructor[];
 
 export type TPugNodesWithTypes = {
     [key in PugNodes["type"]]: Extract<PugNodes, { type: key }>
@@ -65,12 +64,18 @@ export { PugToken, PugAST, PugNode, PugNodeAttribute, PugNodes, CompilerNode as 
 export default class Plugin implements PugPlugin {
     public static Hooks: THookArray = [
         ConditionalHook,
-        //ForEachHook,
-        ComponentHook,
         PropertyHook,
         PupperToAlpineHook,
         ImportHook,
         StyleAndScriptHook
+    ];
+
+    /**
+     * All phases to be executed.
+     * Phases are executed before hooks.
+     */
+    public static Phases: THookArray = [
+        PrepareComponents
     ];
 
     /**
@@ -122,7 +127,7 @@ export default class Plugin implements PugPlugin {
     /**
      * A handler for the plugin filters.
      */
-    private filters: Record<string, Function[]> = {};
+    private filters: Record<string, { callback: Function, hook: THookArray[0] }[]> = {};
 
     /**
      * Any data to be shared between hooks and phases.
@@ -132,25 +137,33 @@ export default class Plugin implements PugPlugin {
     public lex: LexerPlugin;
 
     constructor(
-        public compiler: PupperCompiler,
-        public options: Options & {
-            contents?: string
-        }
+        public compiler: PupperCompiler
     ) {
-        this.prepareHooks();
-
         // Create the lexer
         this.lex = {
-            isExpression: (lexer: PugLexer.Lexer, exp: string) => 
+            isExpression: (lexer: lex.Lexer, exp: string) => 
                 this.applyFilters<string, boolean>("testExpression", exp)
         };
+    }
+
+    public get options() {
+        return this.compiler.options;
     }
 
     /**
      * Prepares a list of ordered hooks.
      */
-    protected prepareHooks() {
+    public prepareHooks() {
         const hookOrder: string[] = [];
+
+        if (this.compiler.compilationType !== CompilationType.TEMPLATE) {
+            Plugin.Phases
+                .map((Phase) => new Phase(this))
+                .forEach((phase) => {
+                    phase.prepareFilters();
+                    hookOrder.push(phase.constructor.name);
+                });
+        }
 
         Plugin.Hooks
             // Create the hooks instances
@@ -202,15 +215,26 @@ export default class Plugin implements PugPlugin {
      * @param callback The filter callback.
      * @returns 
      */
-    public addFilter(filter: string, callback: Function) {
+    public addFilter(filter: string, callback: Function, hook: THookConstructor) {
         if (this.filters[filter] === undefined) {
             this.filters[filter] = [];
         }
 
-        return this.filters[filter].push(callback);
+        return this.filters[filter].push({
+            callback,
+            hook
+        });
     }
 
-    public applyFilters<TValue, TResultingValue = TValue>(filter: string, value: TValue): TResultingValue {
+    /**
+     * Applies all hooks filters for a given value.
+     * @param filter The filter name to be applied. 
+     * @param value The filter initial value.
+     * @returns 
+     */
+    public applyFilters<TValue, TResultingValue = TValue>(filter: string, value: TValue, options?: {
+        skip: THookArray
+    }): TResultingValue {
         // If has no filters, return the initial value
         if (this.filters[filter] === undefined) {
             return value as any as TResultingValue;
@@ -218,7 +242,12 @@ export default class Plugin implements PugPlugin {
 
         try {
             for(let callback of this.filters[filter]) {
-                value = callback(value);
+                // @ts-ignore
+                if (options?.skip?.some((sk) => callback.hook instanceof sk)) {
+                    continue;
+                }
+
+                value = callback.callback(value);
             }
         } catch(e) {
             console.error(e);
@@ -233,9 +262,13 @@ export default class Plugin implements PugPlugin {
      * @param node The node or node array to be parsed.
      * @returns 
      */
-    public parseChildren<TInput extends NodeModel | NodeModel[], TResult>(node: TInput) {
+    public parseChildren<TInput extends NodeModel | NodeModel[], TResult>(node: TInput, skipComponentCheck: boolean = false) {
+        let options = skipComponentCheck ? {
+            skip: [PrepareComponents]
+        } : undefined;
+
         if (Array.isArray(node)) {
-            this.applyFilters("parse", node);
+            this.applyFilters("parse", node, options);
 
             node.forEach((node) => {
                 this.parseChildren(node);
@@ -245,7 +278,7 @@ export default class Plugin implements PugPlugin {
         }
 
         node.setChildren(
-            this.applyFilters("parse", node.getChildren())
+            this.applyFilters("parse", node.getChildren(), options)
         );
 
         node.getChildren().forEach((child) => {
@@ -281,8 +314,8 @@ export default class Plugin implements PugPlugin {
      */
 
     public preLex(template: string) {
-        this.options.contents = this.applyFilters("preLex", template);
-        return this.options.contents;
+        this.compiler.contents = this.applyFilters("preLex", template);
+        return this.compiler.contents;
     }
 
     public preParse(tokens: PugToken[]) {
@@ -301,34 +334,11 @@ export default class Plugin implements PugPlugin {
         return this.applyFilters("postCodeGen", code);
     }
 
-    /**
-     * Makes a compilation error.
-     * @param code The error code.
-     * @param message The error message.
-     * @param data The error data.
-     * @returns 
-     */
-    public makeError(code: string, message: string, data: {
-        line?: number;
-        column?: number;
-    } = {}) {
-        return pugError(code, message, {
-            ...data,
-            filename: this.options.filename,
-            src: this.options.contents
-        } as any);
+    public get makeError() {
+        return this.compiler.makeError.bind(this.compiler);
     }
 
-    /**
-     * Makes an error with "COMPILATION_ERROR" code.
-     * @param message The error message.
-     * @param data The error data.
-     * @returns 
-     */
-    public makeParseError(message: string, data: {
-        line?: number;
-        column?: number;
-    } = {}) {
-        return this.makeError("COMPILATION_ERROR", message, data);
+    public get makeParseError() {
+        return this.compiler.makeParseError.bind(this.compiler);
     }
 }

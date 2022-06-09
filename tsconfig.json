@@ -4,7 +4,6 @@
         "allowJs": true,
         "esModuleInterop": true,
         "outDir": "out",
-        "sourceMap": true,
         "declaration": true,
         "declarationDir": "types",
         "noImplicitAny": true,
@@ -12,7 +11,8 @@
         "emitDecoratorMetadata": true,
         "moduleResolution": "node",
         "module": "commonjs",
-        "skipLibCheck": true
+        "skipLibCheck": true,
+        "inlineSourceMap": true
     },
     "include": ["./**/*.ts"],
     "exclude": ["node_modules"],

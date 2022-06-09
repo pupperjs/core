@@ -1,16 +1,15 @@
-component(export)
-    template
+template
+    div
+        |This component was exported and loaded by another component!
+
         div
-            |This component was exported and loaded by another component!
+            a.text-primary(href="#", @click="alert('Hello world!')")="Testing a link with an event"
 
-            div
-                a.text-primary(href="#", @click="alert('Hello world!')")="Testing a link with an event"
+        hr
 
-            hr
+script(lang="ts", type="text/javascript")
+    import Pupper from "@pupperjs/renderer";
 
-    script(lang="ts", type="text/javascript")
-        import Pupper from "@pupperjs/renderer";
+    export default Pupper.defineComponent({
 
-        export default Pupper.defineComponent({
-
-        });
+    });
