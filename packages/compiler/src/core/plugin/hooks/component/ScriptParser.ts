@@ -5,7 +5,8 @@ import {
     SyntaxKind,
     ObjectLiteralExpression,
     CallExpression,
-    PropertyAccessExpression
+    PropertyAccessExpression,
+    MethodDeclaration
 } from "ts-morph";
 
 import Plugin from "../../../Plugin";
@@ -50,8 +51,16 @@ export class ScriptParser {
             this.processComponentData();
         }
 
-        if (this.component.methods?.length) {
+        if (this.component.implementation.methods?.length) {
             this.processComponentMethods();
+        }
+
+        if (this.component.implementation.when?.length) {
+            this.processComponentPupperEvents();
+        }
+
+        if (this.component.implementation.events.length) {
+            this.processComponentCustomEvents();
         }
 
         return this.sourceFile.getText();
@@ -72,7 +81,6 @@ export class ScriptParser {
                 return;
             }
 
-
             // Left = identifier, Right = initializer
             const left = binaryExp.getLeft().getText();
             const right = binaryExp.getRight().getText();
@@ -89,53 +97,51 @@ export class ScriptParser {
      * Processes the component methods.
      */
     private processComponentMethods() {
-        const identation = this.component.methods.match(/^(\t| )+/gm)[0];
-
-        let currentMethod = {
-            name: "",
-            body: ""
-        };
-
-        const parsedMethods: {
-            name: string;
-            body: string;
-        }[] = [];
-
-        this.component.methods.split(/[\r\n]/).forEach((line) => {
-            // If the line isn't idented
-            if (!line.startsWith(identation)) {
-                currentMethod = {
-                    name: line.trim(),
-                    body: ""
-                };
-
-                parsedMethods.push(currentMethod);
-            } else {
-                currentMethod.body += line + "\n";
-            }
-        });
-
-        // Create the data parser
-        const data = this.project.createSourceFile(
-            "methods.js",
-            parsedMethods.map((method) =>
-                `function ${method.name} {\n${method.body.trimEnd()}\n}`
-            ).join("\n\n")
-        );
-
-        const componentData = this.findOrCreateComponentObj("methods");
+        const methodsContainer = this.findOrCreateComponentObj("methods");
 
         // Retrieve all function declaration expressions
-        data.getChildrenOfKind(SyntaxKind.FunctionDeclaration).forEach((declaration) => {
+        this.component.implementation.methods.forEach((method) => {
             // Add it to the component
-            const method = componentData.addMethod({
-                name: declaration.getName(),
-                parameters: declaration.getParameters().map((param) => ({
-                    name: param.getName()
-                }))
+            const fn = methodsContainer.addMethod({
+                name: method.name,
+                parameters: method.parameters
             });
 
-            method.setBodyText(declaration.getBodyText());
+            fn.setBodyText(method.body);
+        });
+    }
+
+    /**
+     * Processes the component pupper events.
+     */
+    private processComponentPupperEvents() {
+        // Retrieve all function declaration expressions
+        this.component.implementation.when.forEach((when) => {
+            const method = this.findOrCreateComponentMethod(when.name);
+            let currentText = method.getBodyText();
+
+            if (currentText && !currentText.endsWith("\n") && !currentText.endsWith("\r")) {
+                currentText += "\n";
+            }
+
+            method.setBodyText(currentText + when.body);
+        });
+    }
+
+    /**
+     * Processes the component pupper events.
+     */
+    private processComponentCustomEvents() {
+        const methodsContainer = this.findOrCreateComponentObj("methods");
+
+        // Retrieve all function declaration expressions
+        this.component.implementation.events.forEach((event) => {
+            const fn = methodsContainer.addMethod({
+                name: event.name,
+                parameters: event.parameters
+            });
+
+            fn.setBodyText(event.body);
         });
     }
 
@@ -150,7 +156,7 @@ export class ScriptParser {
         }
 
         // Find the imported components object inside the default export
-        const componentPropsComponents = this.findOrCreateComponentObj("components");
+        const componentsContainer = this.findOrCreateComponentObj("components");
 
         // Iterate over all imported components
         for(let alias in this.plugin.sharedData.imports) {
@@ -161,7 +167,7 @@ export class ScriptParser {
             });
 
             // Add it to the component components
-            componentPropsComponents.addPropertyAssignment({
+            componentsContainer.addPropertyAssignment({
                 name: alias,
                 initializer: alias
             });
@@ -187,6 +193,27 @@ export class ScriptParser {
             name: key,
             initializer: "{}"
         }).getInitializer() as ObjectLiteralExpression;
+    }
+
+    /**
+     * Finds or creates a method inside the component object with a given name.
+     * @param name The key to be find or created.
+     * @returns 
+     */
+    private findOrCreateComponentMethod(name: string) {
+        const componentProps = this.findComponentPropsObj();
+
+        // Try finding an existing property with the given key
+        let exportedMethod = componentProps.getProperties()
+            .find((prop) => prop.isKind(SyntaxKind.MethodDeclaration) && prop.getName() === name);
+
+        if (exportedMethod) {
+            return exportedMethod as MethodDeclaration;
+        }
+
+        return componentProps.addMethod({
+            name: name
+        });
     }
 
     /**

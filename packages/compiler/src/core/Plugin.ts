@@ -202,6 +202,14 @@ export default class Plugin implements PugPlugin {
     }
 
     /**
+     * Detects the identation for the current parsed file.
+     * @returns 
+     */
+    public detectIdentation() {
+        return this.compiler.contents.match(/^[\t ]+/m)[0];
+    }
+
+    /**
      * Retrieves the compiler options
      * @returns 
      */

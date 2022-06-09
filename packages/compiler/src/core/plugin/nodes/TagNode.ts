@@ -57,6 +57,59 @@ export class TagNode extends BlockedCompilerNode<Pug.Nodes.TagNode> {
         return attr;
     }
 
+    /**
+     * Retrieves the raw node attributes.
+     * @returns 
+     */
+    public getRawAttributes() {
+        return this.pugNode.attrs;
+    }
+
+    /**
+     * Retrieves the parsed node attributes.
+     * @returns 
+     */
+    public getAttributes() {
+        return this.pugNode.attrs.map((attr) => {
+            return {
+                name: attr.name,
+                val: String(attr.val).replace(/^((['"`])(?<escaped>.*?)\2$)|(?<nonescaped>.+?$)/, (match, ignored1, ignored2, p3, p4) => p4 || p3)
+            };
+        })
+    }
+
+    /**
+     * Retrieves all raw CSS classes related to this node.
+     * @returns 
+     */
+    public getRawClasses() {
+        return String(this.pugNode.attrs.find((attr) => attr.name === "class")?.val).trim();
+    }
+
+    /**
+     * Retrieves all CSS classes related to this node.
+     * @returns 
+     */
+    public getClasses() {
+        return this.getRawClasses().replace(/['"]/g, "").split(" ");
+    }
+
+    /**
+     * Retrieves the raw CSS ID related to this node.
+     * @returns 
+     */
+    public getRawId() {
+        return String(this.pugNode.attrs.find((attr) => attr.name === "id")?.val).trim();
+    }
+
+    /**
+     * Retrieves the escaped CSS ID related to this node.
+     * @returns 
+     */
+    public getId() {
+        return this.getRawId().replace(/["']/g, "");
+    }
+
     public toPugNode() {
         // This can't be undefined
         this.pugNode.attributeBlocks = this.pugNode.attributeBlocks || [];

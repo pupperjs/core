@@ -1,8 +1,6 @@
 import type pug from "pug";
 import type PugLexer from "pug-lexer";
 
-import { LexTokenType } from "pug-lexer";
-
 export declare namespace Pug {
     export interface LexerPlugin extends Record<string, CallableFunction> {
         /**
@@ -18,7 +16,7 @@ export declare namespace Pug {
      * Represents a pug token
      */
     export interface PugToken {
-        type: LexTokenType,
+        type: PugLexer.LexTokenType,
         loc?: Record<string, any>,
         val?: string,
         name?: string,
@@ -47,9 +45,9 @@ export declare namespace Pug {
      * Represents a single pug node attribute.
      */
     export interface PugNodeAttribute {
-        name: string,
-        val: string,
-        mustEscape: boolean
+        name: string;
+        val: string | boolean | number;
+        mustEscape: boolean;
     }
 
     /**

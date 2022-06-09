@@ -29,6 +29,7 @@ const Renderer = pupper.Renderer;
 
 // Compiles the template to a string
 const template = pupper.compileToStringSync(/*pupper*/`
+template
     .test
         span.hello-world(id={{ id }})
             ={- content -}

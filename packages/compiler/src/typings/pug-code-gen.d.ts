@@ -1,7 +1,7 @@
-import pug from "./pug";
-
-export declare module "pug-code-gen" {
-    export declare interface ICodeGenOptions {
+declare module "pug-code-gen" {
+    import type pug from "./pug";
+    
+    declare interface ICodeGenOptions {
         compileDebug?: boolean;
         pretty?: boolean;
         inlineRuntimeFunctions?: boolean;
@@ -11,5 +11,5 @@ export declare module "pug-code-gen" {
         doctype?: string
     }
 
-    declare export default function CodeGen(ast: pug.Pug.PugAST, options: ICodeGenOptions): string;
+    export default function CodeGen(ast: pug.Pug.PugAST, options: ICodeGenOptions): string;
 }

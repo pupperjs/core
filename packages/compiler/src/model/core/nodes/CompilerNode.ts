@@ -171,6 +171,14 @@ export class CompilerNode<TNode extends PugNodes = any> extends NodeModel<Compil
     }
 
     /**
+     * Retrieves the node type.
+     * @returns 
+     */
+    public getType() {
+        return this.pugNode.type;
+    }
+
+    /**
      * Checks if the node has the given type.
      * @param type The type to be checked.
      * @returns 

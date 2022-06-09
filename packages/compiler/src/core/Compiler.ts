@@ -1,4 +1,3 @@
-import { Pug } from "../typings/pug";
 import pug from "pug";
 import Plugin, { PugAST } from "./Plugin";
 
@@ -126,7 +125,7 @@ export class PupperCompiler {
         return carrier as PugAST;
     }
 
-    protected generateJavaScript(ast: Pug.PugAST): string {
+    protected generateJavaScript(ast: pug.PugAST): string {
         ast = this.plugin.preCodeGen(ast);
 
         let code = codeGen(ast, this.makePugOptions());
@@ -187,14 +186,18 @@ export class PupperCompiler {
      * Make the options for the pug compiler.
      */
     protected makePugOptions() {
-        const pugOptions: pug.Options & { filename: string } = {
+        const pugOptions: pug.Options & {
+            filename: string
+            pretty: boolean
+        } = {
             // We use "$render" as the internal function name.
             name: "$render",
             filename: this.getFileName(),
             compileDebug: this.options.debug || false,
             // Always use self to prevent conflicts with other compilers.
             self: true,
-            plugins: []
+            plugins: [],
+            pretty: this.options.debug
         };
 
         pugOptions.plugins.push(this.plugin);

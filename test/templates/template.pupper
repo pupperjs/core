@@ -75,6 +75,17 @@ data
         }
     ]
 
-methods
-    onClickPuppy(puppy)
+implementation
+    //- Declaring methods
+    #onClickPuppy(puppy)
         alert("You clicked puppy " + puppy.id + "! :D");
+
+    //- Listening to pupper.js events.
+    when#created
+        console.log("The component was created.");
+
+    when#mounted
+        console.log("The component was mounted.");
+
+    //- Listening to multiple events with one ID'ed listener.
+    event#listener.keyUp.keyPress
