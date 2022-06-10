@@ -59,7 +59,7 @@ export class TagNode extends BlockedCompilerNode<Pug.Nodes.TagNode> {
 
             this.pugNode.attrs.push(attr);
         } else {
-            attr = this.getAttribute(name);
+            attr = this.getRawAttribute(name);
             attr.val = String(value);
         }
 

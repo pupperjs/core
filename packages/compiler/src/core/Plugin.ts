@@ -130,7 +130,7 @@ export default class Plugin implements PugPlugin {
     /**
      * A handler for the plugin filters.
      */
-    private filters: Record<string, { callback: Function, hook: THookArray[0] }[]> = {};
+    private filters: Record<string, { callback: Function, hook: Hook }[]> = {};
 
     /**
      * Any data to be shared between hooks and phases.
@@ -226,7 +226,7 @@ export default class Plugin implements PugPlugin {
      * @param callback The filter callback.
      * @returns 
      */
-    public addFilter(filter: string, callback: Function, hook: THookConstructor) {
+    public addFilter(filter: string, callback: Function, hook: Hook) {
         if (this.filters[filter] === undefined) {
             this.filters[filter] = [];
         }

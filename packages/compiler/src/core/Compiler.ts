@@ -6,9 +6,12 @@ import lex from "pug-lexer";
 import parse from "pug-parser";
 import link from "pug-linker";
 import codeGen from "pug-code-gen";
+import { Console } from "console";
+import { createWriteStream } from "fs";
 
 export enum CompilationType {
-    TEMPLATE
+    TEMPLATE,
+    COMPONENT
 }
 
 export interface ICompilerOptions {
@@ -39,6 +42,8 @@ export class PupperCompiler {
     public plugin = new Plugin(this);
 
     public compilationType: CompilationType;
+
+    public debugger = new Console(createWriteStream(process.cwd() + "/.logs/log.log"), createWriteStream(process.cwd() + "/.logs/error.log"));
 
     constructor(
         /**
@@ -93,6 +98,15 @@ export class PupperCompiler {
         return this.makeError("LEX_ERROR", "Lexer error: " + message, data);
     }
 
+    /**
+     * Normalizes line endings by replacing \r\n with \n.
+     * @param content The template to be normalized.
+     * @returns 
+     */
+    protected normalizeLines(content: string) {
+        return content.replace(/\r\n/g, "\n");
+    }
+
     protected lexAndParseString(template: string) {
         let carrier: any;
 
@@ -141,9 +155,11 @@ export class PupperCompiler {
      * @returns 
      */
     public compileComponent(template: string): string {
-        this.contents = template;
+        this.contents = this.normalizeLines(template);
 
-        const ast = this.lexAndParseString(template);
+        this.compilationType = CompilationType.COMPONENT;
+
+        const ast = this.lexAndParseString(this.contents);
         let rendered = this.generateJavaScript(ast);
 
         return rendered;
@@ -156,13 +172,13 @@ export class PupperCompiler {
      */
     public compileTemplate(template: string): string {
         const pugOptions = this.makePugOptions();
-        this.contents = template;
+        this.contents = this.normalizeLines(template);
 
         this.compilationType = CompilationType.TEMPLATE;
 
         this.plugin.prepareHooks();
 
-        const fn = pug.compile(template, pugOptions);
+        const fn = pug.compile(this.contents, pugOptions);
         const rendered = fn();
 
         return rendered;///*js*/`function $h(h) { return ${htmlToHs({ syntax: "h" })(rendered)}; }`;

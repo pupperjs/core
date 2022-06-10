@@ -4,7 +4,8 @@ import { TagNode } from "../nodes/TagNode";
 import { ScriptParser } from "../hooks/component/ScriptParser";
 import { AstNode } from "../nodes/AstNode";
 import { PupperCompiler } from "../../Compiler";
-import { CompilerNode } from "../../../model/core/nodes/CompilerNode";
+import { ConsumeChildrenAsString } from "../../../util/NodeUtil";
+import { ReadBetweenTokens, ReadLinesUntilOutdent, ReadTagWithAttributes } from "../../../util/LexingUtils";
 
 export const DefaultExportSymbol = Symbol("ExportedComponent");
 
@@ -49,83 +50,107 @@ export class PrepareComponents extends Hook {
         this.plugin.sharedData.components = {};
         this.components = this.plugin.sharedData.components;
 
-        const lines = code.replace(/\r\n/g, "\n").split(/\n/g);
+        const lines = code.split(/\n/g);
         const identation = this.plugin.detectIdentation();
-        const startWithRegExp = new RegExp("^" + identation + "(?!" + identation + ")");
-        const paramsRegExp = /^.+?\((?<params>.*?)\)$/gm;
+        const isIdentationWithTag = new RegExp("^" + identation + "[a-zA-Z\.#]");
         const singleParamRegExp = /([^?=,]+)(=([^,]*))?/g;
 
-        for(let index = 0; index < lines.length; index++) {
-            let line = lines[index];
+        for(let codeIndex = 0; codeIndex < lines.length; codeIndex++) {
+            let codeLine = lines[codeIndex];
 
-            if (line.startsWith("data") && !line.trimEnd().endsWith(".")) {
-                lines[index] = line.trimEnd() + ".";
+            // If it's a data tag and doesn't end with a dot
+            if (codeLine.startsWith("data") && !codeLine.trimEnd().endsWith(".")) {
+                // Add a dot at the end of it
+                lines[codeIndex] = codeLine.trimEnd() + ".";
                 continue;
             }
 
-            if (!line.startsWith("implementation")) {
+            // Skip lines that doesn't start with "implementation"
+            if (!codeLine.startsWith("implementation")) {
                 continue;
             }
 
-            index++;
+            // Read the implementation contents
+            let implContent = ReadLinesUntilOutdent(lines.slice(codeIndex + 1), identation);
+            const implContentLines = implContent.split("\n");
 
-            // Retrieve all lines until a non-identation was found
-            do {
-                line = lines[index];
+            for(let implIndex = 0; implIndex < implContentLines.length; implIndex++) {
+                let implLine = implContentLines[implIndex];
 
-                if (line === undefined) {
-                    break;
-                }
-
-                // Ignore empty lines
-                if (line.length === 0) {
-                    index++;
+                // If the line starts with a identation and a tag
+                if (!implLine.match(isIdentationWithTag)) {
                     continue;
                 }
 
-                // If the line starts with one identation level
-                // but doesn't end with a dot and isn't a comment
-                if (line.match(startWithRegExp) && !line.trim().endsWith(".") && !line.trimStart().startsWith("//")) {
-                    // Append a dot at the end of it
-                    lines[index] = line.trimEnd() + ".";
+                // Read the tag
+                const tagData = ReadTagWithAttributes(implContentLines.slice(implIndex));
+                let identifier = tagData.tag;
 
-                    let identifier = line.trimStart();
+                // If the tag contents (tag + attributes) doesn't end with a dot
+                if (!tagData.content.endsWith(".")) {
+                    this.compiler.debugger.log("\n-------------------------");
+                    this.compiler.debugger.log(tagData.content);
+                    this.compiler.debugger.log("-------------------------\n");
 
-                    // If it's a "when"
-                    if (identifier.startsWith("when")) {
-                        // Replace it with the internal "p-when"
-                        identifier = identifier.replace("when", "event-when");
-                    } else
-                    // If it's not an event or a listener
-                    if (!identifier.startsWith("event") && !identifier.startsWith("listener")) {
-                        // Assume it's a method then
-                        identifier = identifier.replace(identifier, "method" + identifier);
-                    }
+                    this.compiler.debugger.log("before");
+                    this.compiler.debugger.log(implContent + "\n");
 
-                    // Try matching params against the identifier
-                    const matchedParams = paramsRegExp.exec(identifier);
+                    // Add a dot to it
+                    implContent = implContent.replace(tagData.content, tagData.content + ".");
 
-                    // If matched
-                    if (matchedParams) {                        
-                        // Extract all single params
-                        const singleParams = matchedParams.groups.params.matchAll(singleParamRegExp);
-
-                        // Iterate over all params
-                        for(let param of singleParams) {
-                            // If it doesn't have a initializer
-                            if (param[2] === undefined) {
-                                // Strictly add an initializer to it
-                                identifier = identifier.replace(param[0], param[0] + " = undefined");
-                            }
-                        }
-                    }
-
-                    // Replace the identifier with the new one
-                    lines[index] = lines[index].replace(line.trimStart(), identifier);
+                    this.compiler.debugger.log("after");
+                    this.compiler.debugger.log(implContent);
                 }
 
-                index++;
-            } while(line.length === 0 || line.startsWith(identation));
+                // If it's a "when"
+                if (identifier.startsWith("when")) {
+                    this.compiler.debugger.log(">> replacing \"when\" with \"event-when\" for", identifier);
+
+                    // Replace it with the internal "p-when"
+                    implContent = implContent.replace(identifier, identifier.replace("when", "event-when"));
+                } else
+                // If it's not an event or a listener
+                if (!identifier.startsWith("event") && !identifier.startsWith("listener")) {
+                    this.compiler.debugger.log(">> adding method identifier for", identifier);
+
+                    // Assume it's a method then
+                    implContent = implContent.replace(identifier, identifier.replace(identifier, "method" + identifier));
+                }
+
+                // Try matching params against the identifier
+                const matchedParams = ReadBetweenTokens(tagData.attributes, "(", ")");
+
+                // If matched
+                if (matchedParams) {
+                    // Extract all single params
+                    const singleParams = matchedParams.matchAll(singleParamRegExp);
+
+                    // Iterate over all params
+                    for(let param of singleParams) {
+                        // If it doesn't have a initializer
+                        if (param[2] !== undefined) {
+                            continue;
+                        }
+
+                        // Strictly add an "undefined" initializer to it
+                        implContent = implContent.replace(param[0].trim(), param[0].trim() + " = undefined");
+                    }
+
+                    // Skip the params lines
+                    implLine += matchedParams.split("\n").length;
+                }
+            }
+
+            // Replace the implementation contents
+            lines.splice(
+                codeIndex + 1,
+                implContentLines.length,
+                ...implContent.split("\n")
+            );
+
+            this.compiler.debugger.log(lines);
+
+            break;
         }
 
         return lines.join("\n");
@@ -139,7 +164,7 @@ export class PrepareComponents extends Hook {
             }
 
             // Parse as a component
-            const component = this.parseComponentNode(node.parent);
+            this.parseComponentNode(node.parent);
 
             break;
         }
@@ -224,7 +249,7 @@ export class PrepareComponents extends Hook {
 
         // If has a script
         if (script) {
-            component.script = this.consumeChildrenAsString(script);
+            component.script = ConsumeChildrenAsString(script);
         }
 
         // If has a style
@@ -234,7 +259,7 @@ export class PrepareComponents extends Hook {
 
         // If has data
         if (data) {
-            component.data = this.consumeChildrenAsString(data);
+            component.data = ConsumeChildrenAsString(data);
         }
 
         // If has methods
@@ -317,7 +342,7 @@ export class PrepareComponents extends Hook {
                             name: attr.name,
                             initializer: attr.val === "undefined" ? undefined : String(attr.val)
                         })),
-                        body: this.consumeChildrenAsString(child)
+                        body: ConsumeChildrenAsString(child)
                     });
                 break;
 
@@ -330,7 +355,7 @@ export class PrepareComponents extends Hook {
                             name: attr.name,
                             initializer: attr.val
                         })),
-                        body: this.consumeChildrenAsString(child)
+                        body: ConsumeChildrenAsString(child)
                     });
                 break;
 
@@ -344,7 +369,7 @@ export class PrepareComponents extends Hook {
                             name: attr.name,
                             initializer: attr.val
                         })),
-                        body: this.consumeChildrenAsString(child),
+                        body: ConsumeChildrenAsString(child),
                         covers: child.getClasses()
                     });
                 break;
@@ -352,15 +377,5 @@ export class PrepareComponents extends Hook {
         });
 
         return implementations;
-    }
-
-    /**
-     * Consumes all children nodes values from a node into a string.
-     * @param node The node to be consumed.
-     * @returns 
-     */
-    protected consumeChildrenAsString(node: CompilerNode) {
-        this.plugin.parseChildren(node);
-        return node.getChildren().map((child) => child.getProp("val")).join("").trimEnd();
     }
 };

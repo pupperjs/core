@@ -120,7 +120,7 @@ export class ScriptParser {
             const method = this.findOrCreateComponentMethod(when.name);
             let currentText = method.getBodyText();
 
-            if (currentText && !currentText.endsWith("\n") && !currentText.endsWith("\r")) {
+            if (currentText && !currentText.endsWith("\n")) {
                 currentText += "\n";
             }
 

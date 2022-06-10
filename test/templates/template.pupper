@@ -77,7 +77,9 @@ data
 
 implementation
     //- Declaring methods
-    #onClickPuppy(puppy)
+    #onClickPuppy(
+        puppy
+    )
         alert("You clicked puppy " + puppy.id + "! :D");
 
     //- Listening to pupper.js events.

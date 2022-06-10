@@ -8,4 +8,5 @@ yarn.lock
 node_modules
 modules/
 .local
+.logs
 jest.config.js

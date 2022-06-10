@@ -105,7 +105,7 @@ export class CompilerNode<TNode extends PugNodes = any> extends NodeModel<Compil
         /**
          * The plugin related to this compiler node.
          */
-        protected plugin?: Plugin
+        public plugin?: Plugin
     ) {
         super(parent);
 

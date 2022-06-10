@@ -9,16 +9,20 @@ export class ListenerHook extends Hook {
             if (!(node instanceof TagNode)) {
                 return;
             }
-        
+
             // If has a listener
             if (node.hasAttribute("p-listener")) {
                 // Remove the attribute from it
                 const listenerName = node.removeAttribute("p-listener") as string;
+                const component = this.plugin.sharedData.components[DefaultExportSymbol] as IComponent;
+                
+                // If the component has no listeners, ignore it
+                if (component.implementation?.listeners?.length === 0) {
+                    return;
+                }
 
                 // Retrieve all events that this listener covers
-                const eventNames = (
-                    this.plugin.sharedData.components[DefaultExportSymbol] as IComponent
-                ).implementation.listeners
+                const eventNames = component.implementation.listeners
                     .find((e) => e.name === "$$p_" + listenerName).covers;
 
                 // Set them                        
