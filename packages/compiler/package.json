@@ -17,6 +17,8 @@
     "pug-error": "^2.0.0",
     "pug-linker": "^4.0.0",
     "pug-parser": "^6.0.0",
+    "snabbdom": "^3.5.0",
+    "snabbdom-virtualize": "^0.7.0",
     "ts-morph": "^15.1.0"
   },
   "types": "./types/",

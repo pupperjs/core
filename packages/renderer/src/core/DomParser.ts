@@ -66,7 +66,7 @@ export class DOMParser {
      * @param node The node to be initialized.
      */
     protected initNode(node: HTMLElement) {
-        Alpine.initTree(node);
+        //Alpine.initTree(node);
     }
 
     /**

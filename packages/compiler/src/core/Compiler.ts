@@ -8,6 +8,7 @@ import link from "pug-linker";
 import codeGen from "pug-code-gen";
 import { Console } from "console";
 import { createWriteStream } from "fs";
+import { PugToVirtualDOM } from "./compiler/HTMLToVirtualDOM";
 
 export enum CompilationType {
     TEMPLATE,
@@ -31,6 +32,11 @@ export interface ICompilerOptions {
      * @internal Not meant to be used externally.
      */
     pug?: pug.Options;
+
+    /**
+     * If wants to use Virtual DOM or normal DOM inputs.
+     */
+    useVirtualDom?: boolean;
 }
 
 export class PupperCompiler {
@@ -39,10 +45,19 @@ export class PupperCompiler {
      */
     public contents: string;
 
+    /**
+     * The compiler plugin instance.
+     */
     public plugin = new Plugin(this);
 
+    /**
+     * The type of the compilation that this compiler is currently handling
+     */
     public compilationType: CompilationType;
 
+    /**
+     * An exclusive console instance for debugging purposes.
+     */
     public debugger = new Console(createWriteStream(process.cwd() + "/.logs/log.log"), createWriteStream(process.cwd() + "/.logs/error.log"));
 
     constructor(
@@ -107,6 +122,11 @@ export class PupperCompiler {
         return content.replace(/\r\n/g, "\n");
     }
 
+    /**
+     * Lexes and parses a template string into an AST.
+     * @param template The template to be parsed.
+     * @returns 
+     */
     protected lexAndParseString(template: string) {
         let carrier: any;
 
@@ -139,11 +159,19 @@ export class PupperCompiler {
         return carrier as PugAST;
     }
 
+    /**
+     * Generates a JavaScript function that renders the 
+     * @param ast The AST to be converted.
+     * @returns 
+     */
     protected generateJavaScript(ast: pug.PugAST): string {
+        // Allow hooking
         ast = this.plugin.preCodeGen(ast);
 
+        // Generate the code
         let code = codeGen(ast, this.makePugOptions());
 
+        // Allow hooking
         code = this.plugin.postCodeGen(code);
 
         return code;
@@ -156,7 +184,6 @@ export class PupperCompiler {
      */
     public compileComponent(template: string): string {
         this.contents = this.normalizeLines(template);
-
         this.compilationType = CompilationType.COMPONENT;
 
         const ast = this.lexAndParseString(this.contents);
@@ -171,17 +198,19 @@ export class PupperCompiler {
      * @returns 
      */
     public compileTemplate(template: string): string {
-        const pugOptions = this.makePugOptions();
         this.contents = this.normalizeLines(template);
-
         this.compilationType = CompilationType.TEMPLATE;
 
-        this.plugin.prepareHooks();
+        const ast = this.lexAndParseString(this.contents);
+        let rendered: string;
 
-        const fn = pug.compile(this.contents, pugOptions);
-        const rendered = fn();
+        if (this.options.useVirtualDom !== false) {
+            rendered = /*js*/`function $h({ h }) {\nreturn ${PugToVirtualDOM.virtualize(this, ast)};\n}`;
+        } else {
+            rendered = eval("return (" + this.generateJavaScript(ast) + "())");
+        }
 
-        return rendered;///*js*/`function $h(h) { return ${htmlToHs({ syntax: "h" })(rendered)}; }`;
+        return rendered;
     }
 
     /**

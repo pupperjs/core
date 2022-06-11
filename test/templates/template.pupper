@@ -8,13 +8,13 @@ template
             .cover-container.d-flex.h-100.p-3.mx-auto.flex-column
                 header.masthead.mb-auto 
                     .inner
-                        h3.masthead-brand={{ page.title }}
+                        h3.masthead-brand=page.title
 
                 //- Main contents
                 main.inner.cover.my-3(role="main")
-                    h1.cover-heading={{ page.description }}
+                    h1.cover-heading=page.description
 
-                    p.lead={{ page.lead }}
+                    p.lead=page.lead
 
                     .row.mt-5.justify-content-around.align-items-center
                         if puppies === undefined || puppies.length === 0
@@ -27,18 +27,18 @@ template
                                         img.card-img-top(:src="puppy.thumbnail", crossorigin="auto")
 
                                         .card-header
-                                            h5.card-title={{ puppy.title }}
+                                            h5.card-title=puppy.title
                                             small.text-muted|Served by pupper.js
 
                                         .card-body
-                                            ={- puppy.description -}
+                                            !=puppy.description
 
                                             if puppy.shibe === true
                                                 p.text-warning|shibe!!!
 
                                             if puppy.properties
                                                 each property in puppy.properties
-                                                    span.badge.badge-info={{property}}
+                                                    span.badge.badge-info=property
 
                     div 
                         |Testing slots: 

@@ -27,7 +27,7 @@ export class ListenerHook extends Hook {
 
                 // Set them                        
                 for(let event of eventNames) {
-                    node.setAttribute("x-bind:" + event, "$$p_" + listenerName);
+                    node.setAttribute("x-on:" + event, "$$p_" + listenerName);
                 }
             }
         });

@@ -1,3 +1,4 @@
+import { CompilerNode } from "../../../model/core/nodes/CompilerNode";
 import { PugToken } from "../../Plugin";
 import { Hook } from "../Hook";
 
@@ -12,7 +13,16 @@ export class PropertyHook extends Hook {
     }
 
     public lex(tokens: PugToken[]) {
+        let insideAttribute = false;
+
         return tokens.map((token) => {
+            if (token.type === "start-attributes") {
+                insideAttribute = true;
+            } else
+            if (token.type === "end-attributes") {
+                insideAttribute = false;
+            }
+            
             // We want only attribute and code tokens
             if (token.type !== "attribute" && token.type !== "code") {
                 return token;
@@ -35,8 +45,13 @@ export class PropertyHook extends Hook {
                 } else {
                     const textOrHtml = fn === "escape" ? "text" : "html";
 
+                    token.type = "code";
                     token.val = /*html*/`"<span x-${textOrHtml}=\\"${value}\\"></span>"`;
                     token.mustEscape = false;
+                }
+
+                if (insideAttribute) {
+                    token.type = "attribute";
                 }
             }
 

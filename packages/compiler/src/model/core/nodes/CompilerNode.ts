@@ -139,7 +139,7 @@ export class CompilerNode<TNode extends PugNodes = any> extends NodeModel<Compil
      * @param type The children node type.
      * @returns 
      */
-    public findFirstChildByType(type: string) {
+    public findFirstChildByType(type: PugNodes["type"]) {
         return this.children.find((child) => child.isType(type));
     }
 
@@ -183,8 +183,16 @@ export class CompilerNode<TNode extends PugNodes = any> extends NodeModel<Compil
      * @param type The type to be checked.
      * @returns 
      */
-    public isType(type: string) {
+    public isType(type: PugNodes["type"]) {
         return this.pugNode.type === type;
+    }
+
+    /**
+     * Sets the compiler node type.
+     * @param type The new node type
+     */
+    public setType(type: PugNodes["type"]) {
+        this.pugNode.type = type;
     }
 
     /**

@@ -198,6 +198,25 @@ export declare namespace Pug {
         export declare interface MixinNode extends PugNode {
             type: "Mixin";
         }
+
+        export declare interface TextNode extends PugNode {
+            type: "Text";
+            val: string;
+        }
+
+        export declare interface CodeNode extends PugNode {
+            type: "Code";
+            val: string;
+            isInline: boolean;
+            mustEscape: boolean;
+            buffer: boolean;
+        }
+
+        export declare interface CommentNode extends PugNode {
+            type: "Comment";
+            val: string;
+            buffer: boolean;
+        }
     }
 }
 
@@ -237,6 +256,9 @@ declare module "pug" {
         Pug.Nodes.TagNode |
         Pug.Nodes.ConditionalNode |
         Pug.Nodes.EachNode |
-        Pug.Nodes.MixinNode
+        Pug.Nodes.MixinNode |
+        Pug.Nodes.TextNode | 
+        Pug.Nodes.CommentNode |
+        Pug.Nodes.CodeNode
     );
 }
