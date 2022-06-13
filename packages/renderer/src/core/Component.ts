@@ -1,7 +1,6 @@
-import Alpine from "alpinejs";
 import { VNode } from "snabbdom";
-import { DOMParser } from "./DomParser";
-import { VDomRenderer } from "./VDomRenderer";
+import { reactive } from "../model/Reactivity";
+import { Renderer } from "./vdom/Renderer";
 
 /**
  * Represents a slot.
@@ -51,31 +50,26 @@ export interface IComponent<
     /**
      * Called when the component is mounted
      */
-    created?: (this: PupperComponent) => any,
+    created?: (this: Component) => any,
 
     /**
      * Called when the component is mounted.
      */
-    mounted?: (this: PupperComponent) => any;
+    mounted?: (this: Component) => any;
 }
 
-export class PupperComponent {
+export class Component {
     public static create<
         TMethods extends Record<string, CallableFunction>,
         TData extends Record<string, any>
     >(component: IComponent<TData, TMethods>) {
-        return new PupperComponent(component) as (PupperComponent & TMethods);
+        return new Component(component) as (Component & TMethods);
     }
-
-    /**
-     * A unique identifier for this component.
-     */
-    protected $identifier: string;
 
     /**
      * The state related to this component.
      */
-    public $state: Record<string, any> = {};
+    public $state = reactive({});
 
     /**
      * Any slots references.
@@ -102,7 +96,7 @@ export class PupperComponent {
     /**
      * The virtual DOM renderer instance.
      */
-    protected renderer = new VDomRenderer(this);
+    protected renderer = new Renderer(this);
 
     constructor(
         /**
@@ -213,7 +207,7 @@ export class PupperComponent {
      * Renders the template function into a div tag.
      */
     public async render() {
-        let renderContainer: HTMLElement;
+        let renderContainer: HTMLDivElement;
 
         if (this.firstRender) {
             this.firstRender = false;
@@ -273,43 +267,15 @@ export class PupperComponent {
      * @returns 
      */
     public async mount(target: HTMLElement | Slot) {
-        this.$identifier = "p_" + String((Math.random() + 1).toString(36).substring(2));
-
         const rendered = await this.render();
-        
-        rendered.setAttribute("x-data", this.$identifier);
-
-        // Initialize the data
-        Alpine.data(this.$identifier, () => {
-            return {
-                ...this.$state,
-                init() {
-                    if (this.component?.mounted) {
-                        this.component.mounted.call(this);
-                    }
-                }
-            };
-        });
 
         // If it's targeting a slot
         if (!(target instanceof HTMLElement)) {
-            const replaced = document.createElement("div");
-            replaced.setAttribute("p-slot", "1");
-
-            target.container.replaceWith(replaced);
-            this.parser = new DOMParser(replaced);
-            
+            target.container.replaceWith(...rendered.childNodes);
         } else {
-            // Append it to the virtual DOM
-            this.parser = new DOMParser(target);
+            target.append(...rendered.childNodes);
         }
 
-        const mounted = await this.parser.appendChild(rendered);
-
-        // Save a reference to the internal Alpine data proxy
-        // @ts-ignore
-        this.$state = mounted._x_dataStack[0];
-
-        return mounted;
+        return rendered;
     }
 }

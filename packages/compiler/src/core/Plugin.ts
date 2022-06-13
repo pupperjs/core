@@ -3,7 +3,6 @@ import type { PugPlugin, PugToken, PugAST, PugNode, PugNodes, PugNodeAttribute, 
 import { Hook } from "./plugin/Hook";
 
 import { ConditionalHook } from "./plugin/hooks/ConditionalHook";
-import { PropertyHook } from "./plugin/hooks/PropertyHook";
 import { PupperToAlpineHook } from "./plugin/hooks/PupperToAlpineHook";
 import { ImportHook } from "./plugin/hooks/ImportHook";
 import { CompilerNode } from "../model/core/nodes/CompilerNode";
@@ -66,7 +65,6 @@ export { PugToken, PugAST, PugNode, PugNodeAttribute, PugNodes, CompilerNode as 
 export default class Plugin implements PugPlugin {
     public static Hooks: THookArray = [
         ConditionalHook,
-        PropertyHook,
         PupperToAlpineHook,
         ImportHook,
         StyleAndScriptHook,

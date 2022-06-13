@@ -1,6 +1,14 @@
-import Alpine from "alpinejs";
+import { Component as Component } from "./core/Component";
 
-import { PupperComponent as Component } from "./core/Component";
+/**
+ * Import all directives
+ */
+import "./core/vdom/directives/Conditional";
+import "./core/vdom/directives/Loop";
+import "./core/vdom/directives/Bind";
+import "./core/vdom/directives/EventHandler";
+import "./core/vdom/directives/Text";
+import "./core/vdom/directives/HTML";
 
 export default class Pupper {
     /**
@@ -8,7 +16,15 @@ export default class Pupper {
      */
     public static Component = Component;
 
-    public static defineComponent = Component.create;
+    /**
+     * An alias to Component.create
+     */
+    public static defineComponent: typeof Component["create"] = Component.create;
+
+    /**
+     * A handler for all saved store states.
+     */
+    public static $store: Record<string, any> = {};
 
     /**
      * Sets a state in the global store.
@@ -17,16 +33,13 @@ export default class Pupper {
      * @returns 
      */
     public static store(name: string, value?: any) {
-        return Alpine.store(name, value);
+        return value !== undefined ? this.$store[name] : this.$store[name] = value;
     };
     
     /**
      * The Pupper global state.
      */
-    public static $global = Alpine.store("__GLOBAL__") as Record<string, any>;
+    public static $global = this.store("__GLOBAL__");
 };
-
-// Sets the global magic
-Alpine.magic("global", () => Pupper.$global);
 
 module.exports = Pupper;
