@@ -1,26 +1,28 @@
 {
   "name": "@pupperjs/renderer",
   "version": "1.0.0",
-  "description": "A reactive template engine based in Pug and Alpine.js",
+  "description": "The pupper.js frontend renderer and state handler.",
   "author": "Matheus Giovani <matheus@ad3com.com.br>",
   "license": "AGPL-3.0",
   "private": false,
   "main": "./out/",
   "scripts": {
     "watch": "npm-run-all -p -r watch:*",
-    "watch:ts": "tsc -watch"
+    "watch:ts": "cross-env NODE_OPTIONS=\"-r tsconfig-paths/register\" tsc -watch"
   },
   "dependencies": {
     "dom2hscript": "^0.2.3",
     "pug": "^3.0.2",
-    "virtual-dom": "^2.1.1"
+    "virtual-dom": "file:./../virtual-dom"
   },
   "types": "./types/",
   "devDependencies": {
     "@types/node": "^16.7.6",
     "@types/virtual-dom": "^2.1.1",
+    "cross-env": "^7.0.3",
     "debug": "^4.3.4",
     "tsc": "^2.0.3",
+    "tsconfig-paths": "^4.0.0",
     "typescript": "^4.4.2",
     "webpack": "^5.51.1",
     "webpack-cli": "^4.8.0",

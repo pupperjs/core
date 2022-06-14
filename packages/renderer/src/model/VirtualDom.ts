@@ -23,7 +23,7 @@ export function cloneNode(node: VirtualDOM.VTree | string): VirtualDOM.VTree {
             return new VText(node.text);
         }
 
-        return new VText(node);
+        return new VText(String(node));
     }
 
     return h(node.tagName, node.properties, node.children);

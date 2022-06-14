@@ -1,12 +1,9 @@
-import { cloneNode } from "../../model/VirtualDom";
 import { Renderer } from "./Renderer";
-
-import VNode from "virtual-dom/vnode/vnode";
-import VText from "virtual-dom/vnode/vtext";
 
 import h from "virtual-dom/h";
 import diff from "virtual-dom/diff";
-import { patch, VNode } from "virtual-dom";
+import patch from "virtual-dom/patch";
+import VComment from "virtual-dom/vnode/vcomment";
 
 const debug = require("debug")("pupper:vdom:node");
 
@@ -43,6 +40,10 @@ export class PupperNode<TNode extends VirtualDOM.VTree = any> {
         if (typeof node !== "string") {
             // Initialize the properties
             this.tag = "tagName" in node ? node.tagName : "TEXT";
+
+            if (node instanceof VComment) {
+                this.tag = "!";
+            }
 
             if ("properties" in node) {
                 if ("attrs" in node.properties) {
@@ -265,7 +266,10 @@ export class PupperNode<TNode extends VirtualDOM.VTree = any> {
      * @returns 
      */
     public replaceWithComment() {
-        const comment = new PupperNode(new VNode("COMMENT", {}, []), this.parent, this.renderer);
+        // @ts-ignore
+        const comment = new PupperNode(h.c("!"), this.parent, this.renderer);
+
+        console.log(comment);
 
         this.replaceWith(comment);
 
@@ -441,6 +445,11 @@ export class PupperNode<TNode extends VirtualDOM.VTree = any> {
      */
     public toVNode(): VirtualDOM.VTree | string {
         if (typeof this.node === "string") {
+            return this.node;
+        }
+
+        if (this.tag === "!") {
+            this.node = new VComment(this.text);
             return this.node;
         }
 

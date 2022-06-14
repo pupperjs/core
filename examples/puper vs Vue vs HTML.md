@@ -52,11 +52,7 @@
 
 - HTML
     ```html
-    <ul>
-        <li v-for="index in list" @click="removeItem(index)">
-            {{list[index]}}
-        </li>
-    </ul>
+    <ul></ul>
 
     <script>
         let list = [

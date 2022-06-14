@@ -21,11 +21,5 @@ module.exports = {
                 use: ["source-map-loader"],
             },
         ]
-    },
-    resolve: {
-        alias: {
-            "pupper.js": __dirname + "/out/"
-        }
-    },
-    mode: "development"
+    }
 }
