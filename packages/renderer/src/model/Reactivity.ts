@@ -1,20 +1,48 @@
 type TEffect = () => any | Promise<any>;
 type TReactiveObj = Record<string | number | symbol, any>;
 
-const effects = new Map<TReactiveObj, TEffect | any>();
+const effects = new Map<TReactiveObj, Record<string | symbol, TEffect[]>>();
 let currentEffect: TEffect = null;
+
+const debug = require("debug")("pupper:reactivity");
+
+const ProxySymbol = Symbol("$Proxy");
 
 export async function effect(effect: TEffect) {
     currentEffect = effect;
+
+    debug("processing effect %O", effect);
 
     // Calling the effect immediately will make it
     // be detected and registered at the effects handler.
     await effect();
 
+    debug("effect was processed");
+
     currentEffect = null;
+
+    return () => {
+        effects.forEach((val, key) => {
+            for(let prop in val) {
+                if (val[prop].includes(effect)) {
+                    val[prop].splice(val[prop].indexOf(effect), 1);
+                    effects.set(key, val);
+                }
+            }
+        });
+    };
 }
 
 export function reactive(obj: TReactiveObj) {
+    for(let property in obj) {
+        // Proxy subobjects
+        if ((typeof obj[property] === "object" || Array.isArray(obj[property])) && obj[ProxySymbol] === undefined) {
+            obj[property] = reactive(obj[property]);
+        }
+    }
+
+    obj[ProxySymbol] = true;
+
     return new Proxy(obj, {
         get(target, property) {
             // If detected no current effect
@@ -49,6 +77,8 @@ export function reactive(obj: TReactiveObj) {
                 targetEffects[property].push(currentEffect);
             }
 
+            debug("effect access property %s from %O", property, target);
+
             return target[property];
         },
 
@@ -59,7 +89,9 @@ export function reactive(obj: TReactiveObj) {
             } else
             // Only objects can be reactive
             if (typeof value === "object") {
-                target[property] = reactive(value);
+                if (value[ProxySymbol] === undefined) {
+                    target[property] = reactive(value);
+                }
             } else {
                 target[property] = value;
             }

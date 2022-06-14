@@ -6,7 +6,7 @@ import VText from "virtual-dom/vnode/vtext";
 
 import h from "virtual-dom/h";
 import diff from "virtual-dom/diff";
-import { patch } from "virtual-dom";
+import { patch, VNode } from "virtual-dom";
 
 const debug = require("debug")("pupper:vdom:node");
 
@@ -29,11 +29,11 @@ export class PupperNode<TNode extends VirtualDOM.VTree = any> {
 
     private ignore: boolean = false;
     private dirty: boolean = true;
-    private patching: boolean;
+    private patching: boolean = false;
+    private renderable: boolean = true;
 
     public text: string = "";
     public element: Element = null;
-    key: string;
 
     constructor(
         protected node: TNode | string,
@@ -42,7 +42,7 @@ export class PupperNode<TNode extends VirtualDOM.VTree = any> {
     ) {
         if (typeof node !== "string") {
             // Initialize the properties
-            this.tag = "tagName" in node ? node.tagName : "text";
+            this.tag = "tagName" in node ? node.tagName : "TEXT";
 
             if ("properties" in node) {
                 if ("attrs" in node.properties) {
@@ -66,7 +66,7 @@ export class PupperNode<TNode extends VirtualDOM.VTree = any> {
                 this.children = node.children.map((child) => new PupperNode(child, this, renderer));
             }
         } else {
-            this.tag = "text";
+            this.tag = "TEXT";
             this.text = node;
         }
     }
@@ -96,12 +96,26 @@ export class PupperNode<TNode extends VirtualDOM.VTree = any> {
     /**
      * Sets all children to dirty.
      * @param dirty If it's dirty or not.
-     * @param autoPatch If can automatically call patch()
      * @returns 
      */
     public setChildrenDirty(dirty: boolean = true, autoPatch: boolean = true) {
         this.children.forEach((child) => {
+            child.setDirty(dirty, autoPatch);
             child.setChildrenDirty(dirty, autoPatch);
+        });
+
+        return this;
+    }
+
+    /**
+     * Sets all children to dirty.
+     * @param ignored If it's dirty or not.
+     * @returns 
+     */
+    public setChildrenIgnored(ignored: boolean = true) {
+        this.children.forEach((child) => {
+            child.setIgnored(ignored);
+            child.setChildrenIgnored(ignored);
         });
 
         return this;
@@ -113,6 +127,16 @@ export class PupperNode<TNode extends VirtualDOM.VTree = any> {
      */
     public setIgnored(ignored: boolean = true) {
         this.ignore = ignored;
+        return this;
+    }
+
+    /**
+     * Sets if this node can be rendered.
+     * @param renderable If this node can be rendered.
+     */
+    public setRenderable(renderable: boolean = true) {
+        this.renderable = renderable;
+        return this;
     }
 
     /**
@@ -121,6 +145,14 @@ export class PupperNode<TNode extends VirtualDOM.VTree = any> {
      */
     public isBeingIgnored() {
         return this.ignore || !this.dirty;
+    }
+
+    /**
+     * Determines if this node can be rendered.
+     * @returns 
+     */
+    public isRenderable() {
+        return this.renderable;
     }
 
     /**
@@ -213,14 +245,15 @@ export class PupperNode<TNode extends VirtualDOM.VTree = any> {
      * @param nodes The nodes to replace the current one.
      * @returns 
      */
-    public replaceWith(...nodes: (PupperNode | VirtualDOM.VTree)[]) {
+    public replaceWith<TNode extends PupperNode | VirtualDOM.VTree | string>(...nodes: TNode[]) {
         if (!this.parent) {
-            return false;
+            return nodes;
         }
 
         this.parent.children.splice(
             this.getIndex(),
             1,
+            // @ts-ignore
             ...nodes.map((node) => !(node instanceof PupperNode) ? new PupperNode(node, this.parent, this.renderer) : node)
         );
 
@@ -284,6 +317,12 @@ export class PupperNode<TNode extends VirtualDOM.VTree = any> {
      */
     public setParent(parent: PupperNode) {
         this.parent = parent;
+
+        // Update the children parents
+        this.children.forEach((child) => {
+            child.setParent(this);
+        });
+
         return this;
     }
 
@@ -342,7 +381,16 @@ export class PupperNode<TNode extends VirtualDOM.VTree = any> {
      * @returns 
      */
     public clone() {
-        return new PupperNode(cloneNode(this.node || this.text), this.parent, this.renderer);
+        const clonedNode = this.node === undefined ? this.text : h(this.tag, {
+            attrs: { ...this.attributes },
+            props: { ...this.properties },
+            on: {... this.eventListeners }
+        }, []);
+
+        const clone = new PupperNode(clonedNode, this.parent, this.renderer);
+        clone.children = this.children.map((child) => child.clone());
+
+        return clone;
     }
 
     /**
@@ -380,20 +428,20 @@ export class PupperNode<TNode extends VirtualDOM.VTree = any> {
      * Patches the VDOM element in real DOM.
      */
     private doPatch() {
-        const diffs = diff(this.node as any, this.toVNode());
+        const diffs = diff(this.node as any, this.toVNode() as any);
 
         this.element = patch(this.element, diffs);
         this.patching = false;
+        this.dirty = false;
     }
 
     /**
      * Converts the current node into a virtual DOM node.
      * @returns 
      */
-    public toVNode(): VirtualDOM.VTree {
-        if (this.tag === "text") {
-            this.node = new VText(this.text) as TNode;
-            return this.node as VirtualDOM.VText;
+    public toVNode(): VirtualDOM.VTree | string {
+        if (typeof this.node === "string") {
+            return this.node;
         }
 
         const properties: Record<string, any> = {

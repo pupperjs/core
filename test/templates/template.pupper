@@ -18,7 +18,7 @@ template
 
                     .row.mt-5.justify-content-around.align-items-center
                         if puppies === undefined || puppies.length === 0
-                            |Oh noe! No puppies to show :(
+                            ="Oh noe! No puppies to show :("
                         else
                             //- Render the puppies and share the onClickPuppy method with it
                             each index, puppy in puppies
@@ -28,13 +28,13 @@ template
 
                                         .card-header
                                             h5.card-title=puppy.title
-                                            small.text-muted|Served by pupper.js
+                                            small.text-muted="Served by pupper.js"
 
                                         .card-body
                                             !=puppy.description
 
                                             if puppy.shibe === true
-                                                p.text-warning|shibe!!!
+                                                p.text-warning="shibbe!!!"
 
                                             if puppy.properties
                                                 each property in puppy.properties

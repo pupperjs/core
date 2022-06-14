@@ -1,3 +1,4 @@
+import h from "virtual-dom/h";
 import VNode from "virtual-dom/vnode/vnode";
 import VText from "virtual-dom/vnode/vtext";
 
@@ -25,6 +26,5 @@ export function cloneNode(node: VirtualDOM.VTree | string): VirtualDOM.VTree {
         return new VText(node);
     }
 
-    // @ts-ignore
-    return new VNode(node.tagName, node.properties, node.children, node.key, node.namespace);
+    return h(node.tagName, node.properties, node.children);
 }

@@ -17,12 +17,20 @@ directive("if", async (node, { expression, scope }) => {
     const children = node.children;
     node = node.replaceWithComment();
     node.setIgnored();
+    node.setRenderable(false);
 
-    let clones: PupperNode[] = [];
+   let clones: PupperNode[] = [];
+   let lastValue: boolean = null;
 
     await effect(async () => {
         try {
             const value = await evaluate(scope);
+
+            if (lastValue === value) {
+                return;
+            }
+
+            lastValue = value;
 
             debug("%s evaluated to %O", expression, value);
 

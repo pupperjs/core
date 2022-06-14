@@ -38,24 +38,26 @@ export async function walk<TNode extends PupperNode | PupperNode[]>(nodes: TNode
 }
 
 async function node(node: PupperNode | undefined, scope: any) {
-    //console.group(node.tag, node.getAttributesAndProps());
+    console.group(node.tag, node.getAttributesAndProps(), node);
 
     // If it's an invalid node
     if (!node) {
-        //console.groupEnd();
+        console.groupEnd();
         // Ignore it
         return undefined;
     }
 
     // Ignore if it's a string
     if (typeof node === "string") {
-        //console.groupEnd();
+        console.info("node is a string");
+        console.groupEnd();
         return node;
     }
 
     // Ignore if it's being ignored
     if (node.isBeingIgnored()) {
-        //console.groupEnd();
+        console.info("node is being ignored");
+        console.groupEnd();
         return node;
     }
 
@@ -68,7 +70,8 @@ async function node(node: PupperNode | undefined, scope: any) {
 
     // If the node was removed, stop parsing
     if (!node.exists()) {
-        //console.groupEnd();
+        console.info("node was removed");
+        console.groupEnd();
         return node;
     }
 
@@ -77,7 +80,14 @@ async function node(node: PupperNode | undefined, scope: any) {
         node.children = await walk(node.children, scope);
     }
 
-    //console.groupEnd();
+    // If it's non-renderable
+    if (!node.isRenderable()) {
+        console.info("node is not renderable");
+        // Allow parsing its children but prevent itself from being rendered.
+        return undefined;
+    }
+
+    console.groupEnd();
 
     return node;
 }

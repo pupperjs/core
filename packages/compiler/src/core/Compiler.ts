@@ -7,7 +7,7 @@ import parse from "pug-parser";
 import link from "pug-linker";
 import codeGen from "pug-code-gen";
 import { Console } from "console";
-import { createWriteStream } from "fs";
+import { createWriteStream, existsSync, mkdirSync } from "fs";
 import { PugToVirtualDOM } from "./compiler/HTMLToVirtualDOM";
 
 export enum CompilationType {
@@ -58,7 +58,7 @@ export class PupperCompiler {
     /**
      * An exclusive console instance for debugging purposes.
      */
-    public debugger = new Console(createWriteStream(process.cwd() + "/.logs/log.log"), createWriteStream(process.cwd() + "/.logs/error.log"));
+    public debugger: Console;
 
     constructor(
         /**
@@ -66,7 +66,12 @@ export class PupperCompiler {
          */
         public options: ICompilerOptions
     ) {
-        
+        if (!existsSync(process.cwd() + "/.logs")) {
+            mkdirSync(process.cwd() + "/.logs", { recursive: true });
+        }
+
+        // Create the debug logger
+        this.debugger = new Console(createWriteStream(process.cwd() + "/.logs/log.log"), createWriteStream(process.cwd() + "/.logs/error.log"));
     }
 
     /**

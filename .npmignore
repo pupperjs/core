@@ -3,8 +3,7 @@ test/
 modules/
 tsconfig.json
 webpack.config.js
-yarn-error.log
-yarn.lock
+*-error.log
 node_modules
 modules/
 .local

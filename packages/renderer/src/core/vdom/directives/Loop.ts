@@ -17,10 +17,11 @@ directive("for", async (node, { expression, scope }) => {
     const children = node.children;
     node = node.replaceWithComment();
     node.setIgnored();
+    node.setRenderable(false);
 
     let clones: PupperNode[] = [];
 
-    await effect(async () => {        
+    const removeEffect = await effect(async () => {        
         let loopScope;
 
         try {
@@ -42,25 +43,22 @@ directive("for", async (node, { expression, scope }) => {
 
             // Clear the older nodes if needed
             if (clones.length) {
-                node.parent.children.splice(
-                    node.getIndex() - clones.length,
-                    clones.length
-                );
-
+                clones.forEach((clone) => clone.delete());
                 clones = [];
             }
 
             // Iterate over all evaluated items
-            for(let item in items) {
+            for(let index = 0; index < items.length; index++) {
+                // Clone the scope
                 loopScope = { ...scope };
 
                 // Push the current item to the state stack
                 if ("item" in loopData) {
-                    loopScope[loopData.item] = items[item];
+                    loopScope[loopData.item] = items[index];
                 }
 
                 if ("index" in loopData) {
-                    loopScope[loopData.index] = item;
+                    loopScope[loopData.index] = index;
                 }
 
                 if ("collection" in loopData) {
@@ -68,14 +66,18 @@ directive("for", async (node, { expression, scope }) => {
                 }
 
                 for(let child of children) {
-                    child = child.clone().setParent(node.parent);                    
+                    child = child.clone()
+                        .setIgnored(false)
+                        .setParent(node.parent)
+                        .setDirty(true, false)
+                        .setChildrenDirty(true, false)
+                        .setChildrenIgnored(false);
+
                     node.insertBefore(child);
 
                     child = await walk(child, loopScope);
                     clones.push(child);
                 }
-
-                console.log(node, items[item]);
             }
 
             node.parent.setDirty();
@@ -85,6 +87,8 @@ directive("for", async (node, { expression, scope }) => {
             console.error(e);
         }
     });
+
+    node.addEventListener("removed", removeEffect);
 });
 
 /**

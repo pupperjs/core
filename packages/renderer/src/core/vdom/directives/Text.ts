@@ -6,6 +6,9 @@ import { PupperNode } from "../Node";
 /**
  * @directive x-text
  * @description Sets an element inner text.
+ * 
+ * @todo When a buffered text is given, no text is displayed.
+ *       Maybe the HTML to VDom is treating buffered text incorrectly.
  */
 directive("text", async (node, { expression, scope }) => {
     const evaluate = maybeEvaluateLater(expression);
@@ -21,18 +24,14 @@ directive("text", async (node, { expression, scope }) => {
                 return;
             }
 
-            if (node.tag === "text") {
-                node.replaceWith(new PupperNode(text, node.parent, node.renderer));
+            if (replacedNode) {
+                replacedNode = replacedNode.replaceWith(
+                    new PupperNode(text, node, node.renderer)
+                )[0];
             } else {
-                if (replacedNode) {
-                    replacedNode = replacedNode.replaceWith(
-                        new PupperNode(text, node, node.renderer)
-                    );
-                } else {
-                    replacedNode = new PupperNode(text, node, node.renderer);
-                    node.appendChild(replacedNode);
-                    node.removeAttribute("x-text");
-                }
+                replacedNode = new PupperNode(text, node, node.renderer);
+                node.appendChild(replacedNode);
+                node.removeAttribute("x-text");
             }
 
             node.setDirty();
