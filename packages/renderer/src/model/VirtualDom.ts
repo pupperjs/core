@@ -1,12 +1,13 @@
-import { VNode } from "snabbdom";
+import VNode from "virtual-dom/vnode/vnode";
+import VText from "virtual-dom/vnode/vtext";
 
 /**
  * Clones a list of nodes.
  * @param nodes The list to be cloned.
  * @returns 
  */
-export function cloneNodes(nodes: (VNode | string)[]) {
-    const cloned: (VNode | string)[] = [];
+export function cloneNodes(nodes: (VirtualDOM.VTree)[]) {
+    const cloned: (VirtualDOM.VTree)[] = [];
 
     for(let node of nodes) {
         cloned.push(cloneNode(node));
@@ -15,21 +16,15 @@ export function cloneNodes(nodes: (VNode | string)[]) {
     return cloned;
 }
 
-export function cloneNode(node: VNode | string): VNode | string {
-    if (typeof node === "string") {
-        return node;
+export function cloneNode(node: VirtualDOM.VTree | string): VirtualDOM.VTree {
+    if (!(node instanceof VNode)) {
+        if (node instanceof VText) {
+            return new VText(node.text);
+        }
+
+        return new VText(node);
     }
 
-    return {
-        children: node.children ? cloneNodes(node.children) : undefined,
-        data: node.data ? {
-            attrs: node.data.attrs ? JSON.parse(JSON.stringify(node.data.attrs)) : undefined,
-            props: node.data.props ? JSON.parse(JSON.stringify(node.data.props)) : undefined,
-            on: node.data.on ? JSON.parse(JSON.stringify(node.data.on)) : undefined
-        } : undefined,
-        elm: undefined,
-        key: node.key || undefined,
-        sel: node.sel || undefined,
-        text: node.text || undefined
-    };
+    // @ts-ignore
+    return new VNode(node.tagName, node.properties, node.children, node.key, node.namespace);
 }

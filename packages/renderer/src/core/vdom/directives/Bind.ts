@@ -1,10 +1,9 @@
-import { directive, mapAttributes, startingWith as replaceWith } from "../../../model/Directive";
+import { directive, mapAttributes, replaceWith } from "../../../model/Directive";
 import { evaluateLater } from "../../../model/Evaluator";
 import { effect } from "../../../model/Reactivity";
 
 const debug = require("debug")("pupper:vdom:on");
 
-mapAttributes(replaceWith("@", "x-on:"));
 mapAttributes(replaceWith(":", "x-bind:"));
 
 /**

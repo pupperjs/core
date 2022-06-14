@@ -1,7 +1,7 @@
 import { directive } from "../../../model/Directive";
 import { evaluateLater } from "../../../model/Evaluator";
 import { effect } from "../../../model/Reactivity";
-import { Node } from "../Node";
+import { PupperNode } from "../Node";
 
 /**
  * @directive x-html
@@ -15,7 +15,7 @@ directive("html", async (node, { expression, scope }) => {
             const html = await evaluate(scope) as string;
 
             node.appendChild(
-                new Node(html, node.parent, node.renderer)
+                new PupperNode(html, node.parent, node.renderer)
             );
 
             node.removeAttribute("x-html");

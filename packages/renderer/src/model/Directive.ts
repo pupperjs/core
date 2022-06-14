@@ -1,15 +1,9 @@
-import { VNode } from "snabbdom";
-import { Node } from "../core/vdom/Node";
+import { PupperNode } from "../core/vdom/Node";
 import { Renderer } from "../core/vdom/Renderer";
 
 export type TScope = Record<string, string | boolean | number>;
 
 export type TAttributeVal = string | number | boolean;
-
-export interface IDirectiveVNode extends VNode {
-    _x_ignore: boolean;
-    _x_ignoreSelf: boolean;
-}
 
 type TDirectives = typeof directiveOrder[number];
 
@@ -40,7 +34,7 @@ const currentHandlerStackKey = Symbol();
 const pupperAttrRegex = /^x-([^:^.]+)\b/;
 
 type TDirectiveCallback = (
-    node: Node,
+    node: PupperNode,
     data: {
         renderer: Renderer;
         scope: TScope;
@@ -58,7 +52,7 @@ export function directive(attribute: TDirectives, callback: TDirectiveCallback) 
  * @param node The node to be evaluated.
  * @returns 
  */
-export function directives(node: Node, scope: TScope) {
+export function directives(node: PupperNode, scope: TScope) {
     let transformedAttributeMap: Record<string, string> = {};
 
     const attributes = node.getAttributesAndProps();
@@ -86,7 +80,7 @@ export function directives(node: Node, scope: TScope) {
         });
 }
 
-export function getDirectiveHandler(node: Node, directive: IDirective, scope: TScope) {
+export function getDirectiveHandler(node: PupperNode, directive: IDirective, scope: TScope) {
     let noop = async () => {};
     let handler = directiveHandler[directive.type] || noop;
 
@@ -154,7 +148,7 @@ export function mapAttributes(callback: CallableFunction) {
     attributeTransformers.push(callback);
 }
 
-export function startingWith(subject: string, replacement: string): (prop: IProp) => IProp {
+export function replaceWith(subject: string, replacement: string): (prop: IProp) => IProp {
     return ({ name, value }) => {
         if (name.startsWith(subject)) {
             name = name.replace(subject, replacement);

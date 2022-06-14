@@ -1,9 +1,9 @@
-import { Node } from "../core/vdom/Node";
+import { PupperNode } from "../core/vdom/Node";
 import { directives } from "./Directive";
 
-export async function walk<TNode extends Node | Node[]>(nodes: TNode, scope: any = null): Promise<TNode> {
+export async function walk<TNode extends PupperNode | PupperNode[]>(nodes: TNode, scope: any = null): Promise<TNode> {
     if (!Array.isArray(nodes)) {
-        return await node(nodes as Node, scope) as TNode;
+        return await node(nodes as PupperNode, scope) as TNode;
     }
 
     let count = nodes.length;
@@ -37,7 +37,7 @@ export async function walk<TNode extends Node | Node[]>(nodes: TNode, scope: any
     return nodes;
 }
 
-async function node(node: Node | undefined, scope: any) {
+async function node(node: PupperNode | undefined, scope: any) {
     //console.group(node.tag, node.getAttributesAndProps());
 
     // If it's an invalid node
@@ -63,11 +63,8 @@ async function node(node: Node | undefined, scope: any) {
         await handle();
     }
 
-    // If it's invisible
-    if (node.invisible) {
-        //console.groupEnd();
-        return undefined;
-    }
+    // Set it as non-dirty.
+    node.setDirty(false);
 
     // If the node was removed, stop parsing
     if (!node.exists()) {

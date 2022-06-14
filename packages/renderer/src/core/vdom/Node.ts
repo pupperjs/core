@@ -1,49 +1,60 @@
-import { dir } from "console";
-import { VNode } from "snabbdom";
 import { cloneNode } from "../../model/VirtualDom";
 import { Renderer } from "./Renderer";
 
+import VNode from "virtual-dom/vnode/vnode";
+import VText from "virtual-dom/vnode/vtext";
+
+import h from "virtual-dom/h";
+import diff from "virtual-dom/diff";
+import { patch } from "virtual-dom";
+
 const debug = require("debug")("pupper:vdom:node");
 
-export class Node<TVNode extends Partial<VNode> | string = any> {
-    public children: Node[] = [];
+const Hook = (callback: CallableFunction) => {
+    const hook = function() {};
+    hook.prototype.hook = callback;
 
-    public properties: Record<string, string | boolean | number>;
-    public attributes: Record<string, string | boolean | number>;
-    public eventListeners: Record<string, CallableFunction[]>;
+    // @ts-ignore
+    return new hook();
+};
+
+export class PupperNode<TNode extends VirtualDOM.VTree = any> {
+    public children: PupperNode[] = [];
+
+    public properties: Record<string, string | boolean | number> = {};
+    public attributes: Record<string, string | boolean | number> = {};
+    public eventListeners: Record<string, EventListenerOrEventListenerObject[]> = {};
 
     public tag: string;
 
-    public ignore: boolean = false;
-    public dirty: boolean = true;
-    public invisible: boolean = false;
+    private ignore: boolean = false;
+    private dirty: boolean = true;
+    private patching: boolean;
+
+    public text: string = "";
+    public element: Element = null;
+    key: string;
 
     constructor(
-        protected node: TVNode,
-        public parent: Node = null,
+        protected node: TNode | string,
+        public parent: PupperNode = null,
         public renderer: Renderer
     ) {
         if (typeof node !== "string") {
             // Initialize the properties
-            this.tag = node.sel || "text";
+            this.tag = "tagName" in node ? node.tagName : "text";
 
-            if (node.data) {
-                if ("attrs" in node.data) {
-                    this.attributes = Object.assign({}, node.data.attrs);
-                } else {
-                    this.attributes = {};
+            if ("properties" in node) {
+                if ("attrs" in node.properties) {
+                    this.attributes = Object.assign(this.attributes, node.properties.attrs);
                 }
 
-                if ("props" in node.data) {
-                    this.properties = Object.assign({}, node.data.props);
-                } else {
-                    this.properties = {};
+                if ("props" in node.properties) {
+                    this.properties = Object.assign(this.properties, node.properties.props);
                 }
 
-                if ("on" in node.data) {
-                    this.eventListeners = Object.assign({}, node.data.on as any);
-                } else {
-                    this.eventListeners = {};
+                if ("on" in node.properties) {
+                    this.eventListeners = Object.assign(this.eventListeners, node.properties.on as any);
                 }
             } else {
                 this.attributes = {};
@@ -51,25 +62,49 @@ export class Node<TVNode extends Partial<VNode> | string = any> {
                 this.eventListeners = {};
             }
 
-            this.children = node.children ? node.children.map((child) => new Node(child, this, renderer)) : [];
+            if ("children" in node) {
+                this.children = node.children.map((child) => new PupperNode(child, this, renderer));
+            }
+        } else {
+            this.tag = "text";
+            this.text = node;
         }
     }
 
     /**
-     * Determines if this node is invisible (will be skipped).
-     * @param invisible If it's invisible or not.
+     * Checks if this node element has been rendered.
+     * @returns 
      */
-    public setInvisible(invisible = true) {
-        this.invisible = invisible;
+    public wasRendered() {
+        return this.element !== null;
     }
 
     /**
-     * Determines if this node is dirty (needs to be reparsed) or not.
+     * Sets if this node is dirty (needs to be reparsed) or not.
      * @param dirty If it's dirty or not.
      */
-    public setDirty(dirty: boolean = true) {
+    public setDirty(dirty: boolean = true, autoPatch: boolean = true) {
         this.dirty = dirty;
-        this.renderer.enqueueRender();
+
+        if (dirty && autoPatch) {
+            this.patch();
+        }
+
+        return this;
+    }
+
+    /**
+     * Sets all children to dirty.
+     * @param dirty If it's dirty or not.
+     * @param autoPatch If can automatically call patch()
+     * @returns 
+     */
+    public setChildrenDirty(dirty: boolean = true, autoPatch: boolean = true) {
+        this.children.forEach((child) => {
+            child.setChildrenDirty(dirty, autoPatch);
+        });
+
+        return this;
     }
 
     /**
@@ -81,7 +116,7 @@ export class Node<TVNode extends Partial<VNode> | string = any> {
     }
 
     /**
-     * Checks if the node is being ignored.
+     * Determines if the node is being ignored.
      * @returns 
      */
     public isBeingIgnored() {
@@ -178,7 +213,7 @@ export class Node<TVNode extends Partial<VNode> | string = any> {
      * @param nodes The nodes to replace the current one.
      * @returns 
      */
-    public replaceWith(...nodes: (Node | VNode)[]) {
+    public replaceWith(...nodes: (PupperNode | VirtualDOM.VTree)[]) {
         if (!this.parent) {
             return false;
         }
@@ -186,7 +221,7 @@ export class Node<TVNode extends Partial<VNode> | string = any> {
         this.parent.children.splice(
             this.getIndex(),
             1,
-            ...nodes.map((node) => !(node instanceof Node) ? new Node(node, this.parent, this.renderer) : node)
+            ...nodes.map((node) => !(node instanceof PupperNode) ? new PupperNode(node, this.parent, this.renderer) : node)
         );
 
         return nodes;
@@ -197,9 +232,7 @@ export class Node<TVNode extends Partial<VNode> | string = any> {
      * @returns 
      */
     public replaceWithComment() {
-        const comment = new Node({
-            sel: "!"
-        }, this.parent, this.renderer);
+        const comment = new PupperNode(new VNode("COMMENT", {}, []), this.parent, this.renderer);
 
         this.replaceWith(comment);
 
@@ -211,7 +244,7 @@ export class Node<TVNode extends Partial<VNode> | string = any> {
      * @param event The event name to be added.
      * @param listener The event callback.
      */
-    public addEventListener(event: keyof DocumentEventMap | string, listener: CallableFunction) {
+    public addEventListener(event: keyof DocumentEventMap | string, listener: EventListenerOrEventListenerObject) {
         this.eventListeners[event] = this.eventListeners[event] || [];
         this.eventListeners[event].push(listener);
     }
@@ -221,7 +254,7 @@ export class Node<TVNode extends Partial<VNode> | string = any> {
      * @param event The event name.
      * @param listener The callback to be removed.
      */
-    public removeEventListener(event: keyof DocumentEventMap | string, listener: CallableFunction) {
+    public removeEventListener(event: keyof DocumentEventMap | string, listener: EventListenerOrEventListenerObject) {
         this.eventListeners[event].splice(
             this.eventListeners[event].indexOf(listener),
             1
@@ -249,7 +282,7 @@ export class Node<TVNode extends Partial<VNode> | string = any> {
      * @param parent The new node parent.
      * @returns 
      */
-    public setParent(parent: Node) {
+    public setParent(parent: PupperNode) {
         this.parent = parent;
         return this;
     }
@@ -258,7 +291,7 @@ export class Node<TVNode extends Partial<VNode> | string = any> {
      * Insert a list of nodes before the current node.
      * @param nodes The list of nodes to be inserted.
      */
-    public insertBefore(...nodes: Node[]) {
+    public insertBefore(...nodes: PupperNode[]) {
         this.parent.children.splice(
             this.getIndex() - 1,
             0,
@@ -270,7 +303,7 @@ export class Node<TVNode extends Partial<VNode> | string = any> {
      * Insert a list of nodes after the current node.
      * @param nodes The list of nodes to be inserted.
      */
-    public insertAfter(...nodes: Node[]) {
+    public insertAfter(...nodes: PupperNode[]) {
         this.parent.children.splice(
             this.getIndex() + 1,
             0,
@@ -282,7 +315,7 @@ export class Node<TVNode extends Partial<VNode> | string = any> {
      * Appends a node to the children nodes.
      * @param node The node to be appended.
      */
-    public appendChild(node: Node) {
+    public appendChild(node: PupperNode) {
         this.children.push(node);
     }
 
@@ -290,7 +323,7 @@ export class Node<TVNode extends Partial<VNode> | string = any> {
      * Appends a list of node to the children nodes.
      * @param nodes The nodes to be appended.
      */
-    public append(...nodes: Node[]) {
+    public append(...nodes: PupperNode[]) {
         this.children.push(...nodes);
     }
 
@@ -309,24 +342,7 @@ export class Node<TVNode extends Partial<VNode> | string = any> {
      * @returns 
      */
     public clone() {
-        return new Node(cloneNode(this.node as VNode), this.parent, this.renderer);
-    }
-
-    /**
-     * Patches the DOM for this element.
-     */
-    public updateDOM(callback?: CallableFunction) {
-        if (typeof this.node === "string") {
-            return;
-        }
-
-        if (this.renderer.rendered) {
-            this.renderer.update();
-
-            if (typeof callback === "function") {
-                this.renderer.nextTick(callback);
-            }
-        }
+        return new PupperNode(cloneNode(this.node || this.text), this.parent, this.renderer);
     }
 
     /**
@@ -334,7 +350,7 @@ export class Node<TVNode extends Partial<VNode> | string = any> {
      * @returns 
      */
     public getRoot() {
-        let node: Node = this;
+        let node: PupperNode = this;
 
         while(node.parent !== null) {
             node = node.parent;
@@ -344,34 +360,66 @@ export class Node<TVNode extends Partial<VNode> | string = any> {
     }
 
     /**
-     * Converts this node into a virtual node.
-     * @returns 
+     * Enqueues a patch to the internal VDOM element.
      */
-    public toVirtualNode(): TVNode | VNode {
-        if (typeof this.node === "string") {
-            return {
-                sel: undefined,
-                data: undefined,
-                elm: undefined,
-                children: undefined,
-                key: undefined,
-                text: this.node
-            };
+    public patch() {
+        // Prevent patching if not dirty, being ignored or already patching
+        if (!this.dirty || this.ignore || this.patching) {
+            return;
         }
 
-        this.node = {
-            sel: this.tag === "text" ? undefined : this.tag,
-            data: {
-                props: this.properties,
-                attrs: this.attributes,
-                on: this.eventListeners as any
-            },
-            elm: this.node.elm,
-            children: this.children.map((child) => child.toVirtualNode()),
-            key: this.node.key,
-            text: this.node.text
-        } as TVNode;
+        if (this.wasRendered()) {
+            debug("element was rendered, will be patched");
 
-        return this.node;
+            this.patching = true;
+            this.renderer.singleNextTick(this.doPatch.bind(this));
+        }
+    }
+
+    /**
+     * Patches the VDOM element in real DOM.
+     */
+    private doPatch() {
+        const diffs = diff(this.node as any, this.toVNode());
+
+        this.element = patch(this.element, diffs);
+        this.patching = false;
+    }
+
+    /**
+     * Converts the current node into a virtual DOM node.
+     * @returns 
+     */
+    public toVNode(): VirtualDOM.VTree {
+        if (this.tag === "text") {
+            this.node = new VText(this.text) as TNode;
+            return this.node as VirtualDOM.VText;
+        }
+
+        const properties: Record<string, any> = {
+            ...this.attributes,
+            ...this.properties,
+            $p_create: Hook((node: Element) => {
+                this.element = node;
+            })
+        };
+
+        // Rename the "class" attribute
+        if (properties.class) {
+            properties.className = properties.class;
+            delete properties.class;
+        }
+
+        for(let evt in this.eventListeners) {
+            properties["on" + evt] = this.eventListeners[evt];
+        }
+
+        this.node = h(
+            this.tag,
+            properties,
+            this.children.map((child) => child.toVNode())
+        ) as TNode;
+
+        return this.node as VirtualDOM.VTree;
     }
 }

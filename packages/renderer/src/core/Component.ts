@@ -1,4 +1,3 @@
-import { VNode } from "snabbdom";
 import { reactive } from "../model/Reactivity";
 import { Renderer } from "./vdom/Renderer";
 
@@ -31,7 +30,7 @@ export interface IComponent<
     /**
      * The function that renders the template HTML.
      */
-    render?: (...args: any[]) => string | VNode;
+    render?: (...args: any[]) => VirtualDOM.VTree;
 
     /**
      * Any data to be passed to the template.
@@ -178,36 +177,10 @@ export class Component {
     }
 
     /**
-     * Renders a template and return the rendered child nodes.
-     * @param template The template name to be rendered
-     * @param data The template data
-     * @returns 
-     */
-    public renderTemplate(template: string) {
-        return this.renderStringToTemplate(
-            this.$templates[template](this)
-        ).content.children[0].childNodes;
-    }
-
-    /**
-     * Renders a template string into a template tag with a div with [pup] attribute.
-     * @param string The template string to be rendered.
-     * @returns 
-     */
-    private renderStringToTemplate(string: string): HTMLTemplateElement {
-        const renderContainer = document.createElement("template");
-
-        // @todo this div needs to be removed
-        renderContainer.innerHTML = `<div pup>${string}</div>`;
-
-        return renderContainer;
-    }
-
-    /**
      * Renders the template function into a div tag.
      */
     public async render() {
-        let renderContainer: HTMLDivElement;
+        let renderContainer: Element;
 
         if (this.firstRender) {
             this.firstRender = false;
@@ -271,9 +244,9 @@ export class Component {
 
         // If it's targeting a slot
         if (!(target instanceof HTMLElement)) {
-            target.container.replaceWith(...rendered.childNodes);
+            target.container.replaceWith(rendered);
         } else {
-            target.append(...rendered.childNodes);
+            target.append(rendered);
         }
 
         return rendered;

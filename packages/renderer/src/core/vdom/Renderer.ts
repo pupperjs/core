@@ -1,18 +1,12 @@
 import { Component } from "../Component";
-import {
-    h,
-    propsModule,
-    attributesModule,
-    styleModule,
-    eventListenersModule,
-    init,
-    VNode
-} from "snabbdom";
 
 import Pupper from "../..";
 
 import { walk } from "../../model/NodeWalker";
-import { Node } from "./Node";
+import { PupperNode } from "./Node";
+
+import { diff, patch, create } from "virtual-dom";
+import h from "virtual-dom/h";
 
 const debug = require("debug")("pupper:vdom");
 
@@ -21,7 +15,8 @@ const debug = require("debug")("pupper:vdom");
  * Thanks, alpine.js!
  */
 export class Renderer {
-    private patch: ReturnType<typeof init>;
+    public diff = diff;
+    public patch = patch;
 
     /**
      * The stack of states that formulates the context for rendering elements.
@@ -31,12 +26,7 @@ export class Renderer {
     /**
      * The container that will receive the renderer contents.
      */
-    protected container: HTMLDivElement;
-
-    /**
-     * The current VDOM node.
-     */
-    protected currentDOM: VNode;
+    protected container: Element;
 
     /**
      * The rendering queue.
@@ -59,13 +49,6 @@ export class Renderer {
     constructor(
         protected component: Component
     ) {
-        this.patch = init([
-            propsModule,
-            attributesModule,
-            styleModule,
-            eventListenersModule
-        ]);
-
         this.stateStack.push(
             // Globals
             Pupper.$global,
@@ -137,17 +120,17 @@ export class Renderer {
         const tick = this.nextTick(async () => {
             debug("first render");
 
-            const vdom = this.component.$component.render({ h }) as VNode;
-            const node = new Node(vdom, null, this);
-
+            const vdom = this.component.$component.render({ h });
+            const node = new PupperNode(vdom, null, this);
             const result = await walk(node, this.generateScope());
 
-            this.currentDOM = result.toVirtualNode() as VNode;
-
-            this.container = document.createElement("div");
-            this.patch(this.container, this.currentDOM);
+            this.container = create(result.toVNode() as VirtualDOM.VNode, {
+                warn: true
+            });
 
             this.rendered = true;
+
+            debug("first render ended");
         });
 
         await this.waitForTick(tick);
@@ -171,6 +154,18 @@ export class Renderer {
     }
 
     /**
+     * Enqueues a function to be executed in the next queue tick only if it hasn't been enqueued yet.
+     * @param callback The callback to be executed.
+     */
+    public singleNextTick(callback: CallableFunction) {
+        if (this.queue.find((c) => c.callback === callback)) {
+            return;
+        }
+
+        this.nextTick(callback);
+    }
+
+    /**
      * Waits for the given tick or the last added tick to be executed.
      * @returns 
      */
@@ -178,38 +173,5 @@ export class Renderer {
         return new Promise((resolve) => {
             this.queue[tick !== null ? (tick - 1) : this.queue.length - 1].listeners.push(resolve);
         });
-    }
-
-    /**
-     * Updates the renderer contents.
-     */
-    public update() {
-        if (!this.rendered) {
-            return;
-        }
-
-        this.isRenderEnqueued = true;
-
-        return this.nextTick(async () => {
-            const vdom = this.component.$component.render({ h }) as VNode;
-            const node = new Node(vdom, null, this);
-
-            const result = await walk(node, this.generateScope());
-
-            const newDOM = result.toVirtualNode() as VNode;
-
-            this.patch(this.currentDOM, newDOM);
-
-            this.currentDOM = newDOM;
-        });
-    }
-
-    /**
-     * Enqueues a render update if the not enqueued yet.
-     */
-    public enqueueRender() {
-        if (!this.isRenderEnqueued) {
-            this.nextTick(() => this.update());
-        }
     }
 }

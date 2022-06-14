@@ -3,7 +3,7 @@ import { evaluateLater } from "../../../model/Evaluator";
 import { walk } from "../../../model/NodeWalker";
 import { effect } from "../../../model/Reactivity";
 import { IsNumeric, IsObject } from "../../../util/ObjectUtils";
-import { Node } from "../Node";
+import { PupperNode } from "../Node";
 
 /**
  * @directive x-for
@@ -16,9 +16,9 @@ directive("for", async (node, { expression, scope }) => {
     // Save and remove the children
     const children = node.children;
     node = node.replaceWithComment();
-    node.setIgnored(true);
+    node.setIgnored();
 
-    let clonedChildren: Node[] = [];
+    let clones: PupperNode[] = [];
 
     await effect(async () => {        
         let loopScope;
@@ -40,15 +40,20 @@ directive("for", async (node, { expression, scope }) => {
                 items = [];
             }
 
-            // Delete the existing children
-            //node.parent.children = node.parent.children.filter((child) => !clonedChildren.includes(child));
+            // Clear the older nodes if needed
+            if (clones.length) {
+                node.parent.children.splice(
+                    node.getIndex() - clones.length,
+                    clones.length
+                );
+
+                clones = [];
+            }
 
             // Iterate over all evaluated items
             for(let item in items) {
                 loopScope = { ...scope };
 
-                console.log(items[item]);
-                
                 // Push the current item to the state stack
                 if ("item" in loopData) {
                     loopScope[loopData.item] = items[item];
@@ -63,19 +68,22 @@ directive("for", async (node, { expression, scope }) => {
                 }
 
                 for(let child of children) {
-                    child = child.clone().setParent(node.parent);
+                    child = child.clone().setParent(node.parent);                    
                     node.insertBefore(child);
 
-                    await walk(child, loopScope);
-                }                
+                    child = await walk(child, loopScope);
+                    clones.push(child);
+                }
+
+                console.log(node, items[item]);
             }
+
+            node.parent.setDirty();
         } catch(e) {
             console.warn("[pupperjs] The following information can be useful for debugging:");
             console.warn("last scope:", loopScope);
             console.error(e);
         }
-
-        node.parent.setDirty();
     });
 });
 

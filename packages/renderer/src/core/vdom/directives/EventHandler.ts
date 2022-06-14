@@ -1,7 +1,9 @@
-import { directive } from "../../../model/Directive";
+import { directive, mapAttributes, replaceWith } from "../../../model/Directive";
 import { evaluateLater } from "../../../model/Evaluator";
 
 const debug = require("debug")("pupper:vdom:on");
+
+mapAttributes(replaceWith("@", "x-on:"));
 
 /**
  * @directive x-on

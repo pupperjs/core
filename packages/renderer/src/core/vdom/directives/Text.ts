@@ -1,7 +1,7 @@
 import { directive } from "../../../model/Directive";
 import { maybeEvaluateLater } from "../../../model/Evaluator";
 import { effect } from "../../../model/Reactivity";
-import { Node } from "../Node";
+import { PupperNode } from "../Node";
 
 /**
  * @directive x-text
@@ -9,6 +9,8 @@ import { Node } from "../Node";
  */
 directive("text", async (node, { expression, scope }) => {
     const evaluate = maybeEvaluateLater(expression);
+
+    let replacedNode: PupperNode = null;
 
     await effect(async () => {
         try {
@@ -20,13 +22,17 @@ directive("text", async (node, { expression, scope }) => {
             }
 
             if (node.tag === "text") {
-                node.replaceWith(new Node(text, node.parent, node.renderer));
+                node.replaceWith(new PupperNode(text, node.parent, node.renderer));
             } else {
-                node.appendChild(
-                    new Node(text, node, node.renderer)
-                );
-
-                node.removeAttribute("x-text");
+                if (replacedNode) {
+                    replacedNode = replacedNode.replaceWith(
+                        new PupperNode(text, node, node.renderer)
+                    );
+                } else {
+                    replacedNode = new PupperNode(text, node, node.renderer);
+                    node.appendChild(replacedNode);
+                    node.removeAttribute("x-text");
+                }
             }
 
             node.setDirty();
