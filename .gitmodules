@@ -1,0 +1,3 @@
+[submodule "packages/virtual-dom"]
+	path = packages/virtual-dom
+	url = https://github.com/pupperjs/virtual-dom
