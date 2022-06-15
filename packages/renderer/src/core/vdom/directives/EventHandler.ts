@@ -17,6 +17,7 @@ directive("on", async (node, { value, expression, scope }) => {
 
         debug("will handle event \"%s\" to %O", value, evaluate);
 
+        // @todo check why events are duplicating for the FIRST element inside the for-loop
         node.addEventListener(value, async ($event: any) => {
             debug("handled %s event", value);
             
