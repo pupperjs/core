@@ -1,0 +1,20 @@
+{
+  "name": "@pupperjs/dom2vdom",
+  "version": "1.0.0",
+  "description": "A HTML to virtual-dom converter.",
+  "main": "./out/index.js",
+  "repository": "https://github.com/pupperjs/core/packages/dom2vdom",
+  "author": "Matheus Giovani <matheus@ad3com.com.br>",
+  "license": "MIT",
+  "private": false,
+  "types": "./types",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/virtual-dom": "^2.1.1",
+    "tsc": "^2.0.4",
+    "typescript": "^4.7.3"
+  }
+}

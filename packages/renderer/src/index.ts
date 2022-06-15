@@ -9,6 +9,7 @@ import "./core/vdom/directives/Bind";
 import "./core/vdom/directives/EventHandler";
 import "./core/vdom/directives/Text";
 import "./core/vdom/directives/HTML";
+import "./core/vdom/directives/Component";
 
 export default class Pupper {
     /**

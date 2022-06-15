@@ -163,11 +163,10 @@ const DEFAULT = "DEFAULT"
 const directiveOrder = [
     "ref",
     "id",
+    "component",
     "bind",
     "if",
     "for",
-    "transition",
-    "show",
     "on",
     "text",
     "html",

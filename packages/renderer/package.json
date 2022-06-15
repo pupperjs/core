@@ -11,8 +11,7 @@
     "watch:ts": "cross-env NODE_OPTIONS=\"-r tsconfig-paths/register\" tsc -watch"
   },
   "dependencies": {
-    "dom2hscript": "^0.2.3",
-    "pug": "^3.0.2",
+    "@pupperjs/dom2vdom": "file:./../dom2vdom",
     "virtual-dom": "file:./../virtual-dom"
   },
   "types": "./types/",

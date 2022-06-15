@@ -2,6 +2,9 @@ import { directive } from "../../../model/Directive";
 import { evaluateLater } from "../../../model/Evaluator";
 import { effect } from "../../../model/Reactivity";
 import { PupperNode } from "../Node";
+import dom2vdom from "@pupperjs/dom2vdom";
+
+import h from "virtual-dom/h";
 
 /**
  * @directive x-html
@@ -13,9 +16,10 @@ directive("html", async (node, { expression, scope }) => {
     await effect(async () => {
         try {
             const html = await evaluate(scope) as string;
+            const evaluatedNode = dom2vdom(html, h) as VirtualDOM.VTree;
 
             node.appendChild(
-                new PupperNode(html, node.parent, node.renderer)
+                new PupperNode(evaluatedNode, node.parent, node.renderer)
             );
 
             node.removeAttribute("x-html");
