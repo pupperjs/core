@@ -1,2 +1,3 @@
-./types/*
-out/
+!src/types/
+/out/
+/types/
