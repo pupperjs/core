@@ -36,7 +36,7 @@ directive("text", async (node, { expression, scope }) => {
 
             node.setDirty();
         } catch(e) {
-            console.warn("[pupperjs] failed to set inner text:");
+            console.warn("[pupper.js] failed to set inner text:");
             console.error(e);
         }
     });

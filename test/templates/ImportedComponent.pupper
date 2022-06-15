@@ -6,16 +6,11 @@ template
             |This component has an imported component!
             ExportedComponent()
 
-        div
+        div.my-3
             ="Also mounted into a slot:"
             slot(name="slot")
 
-script(lang="ts", type="text/javascript")
-    import Pupper from "@pupperjs/renderer";
-
-    export default Pupper.defineComponent({
-        mounted() {
-            console.log("Rendering the exported component into slot \"slot\"");
-            ExportedComponent.mount(this.$slots.slot);
-        }
-    });
+implementation
+    when#mounted
+        console.log("Rendering", ExportedComponent, "into named slot \"slot\"", this.$slots.slot);
+        ExportedComponent.mount(this.$slots.slot);

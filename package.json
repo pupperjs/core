@@ -1,5 +1,5 @@
 {
-  "name": "pupperjs",
+  "name": "pupper.js",
   "version": "1.0.0",
   "description": "A reactive template engine based in Pug and Alpine.js",
   "author": "Matheus Giovani <matheus@ad3com.com.br>",

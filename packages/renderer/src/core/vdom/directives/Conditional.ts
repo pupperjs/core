@@ -4,7 +4,9 @@ import { walk } from "../../../model/NodeWalker";
 import { effect } from "../../../model/Reactivity";
 import { PupperNode } from "../Node";
 
-const debug = require("debug")("pupper:vdom:directives:conditional");
+import Debugger from "../../../util/Debugger";
+
+const debug = Debugger.extend("vdom:directives:conditional");
 
 /**
  * @directive x-if
@@ -49,7 +51,7 @@ directive("if", async (node, { expression, scope }) => {
 
             node.parent.setDirty();
         } catch(e) {
-            console.warn("[pupperjs] failed to evaluate conditional:");
+            console.warn("[pupper.js] failed to evaluate conditional:");
             console.error(e);
         }
     });

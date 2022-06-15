@@ -4,7 +4,9 @@ type TReactiveObj = Record<string | number | symbol, any>;
 const effects = new Map<TReactiveObj, Record<string | symbol, TEffect[]>>();
 let currentEffect: TEffect = null;
 
-const debug = require("debug")("pupper:reactivity");
+import Debugger from "../util/Debugger";
+
+const debug = Debugger.extend("reactivity");
 
 const ProxySymbol = Symbol("$Proxy");
 
@@ -87,8 +89,9 @@ export function reactive(obj: TReactiveObj) {
             if (typeof value === null) {
                 target[property] = null;
             } else
-            // Only objects can be reactive
+            // Only objects / arrays can be reactive
             if (typeof value === "object") {
+                // If it's not proxied yet
                 if (value[ProxySymbol] === undefined) {
                     target[property] = reactive(value);
                 }

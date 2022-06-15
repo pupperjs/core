@@ -2,7 +2,9 @@ import { directive, mapAttributes, replaceWith } from "../../../model/Directive"
 import { evaluateLater } from "../../../model/Evaluator";
 import { effect } from "../../../model/Reactivity";
 
-const debug = require("debug")("pupper:vdom:on");
+import Debugger from "../../../util/Debugger";
+
+const debug = Debugger.extend("vdom:on");
 
 mapAttributes(replaceWith(":", "x-bind:"));
 
@@ -27,7 +29,7 @@ directive("bind", async (node, { value, expression, scope }) => {
             
             node.setDirty();
         } catch(e) {
-            console.warn("[pupperjs] failed to bind property:");
+            console.warn("[pupper.js] failed to bind property:");
             console.error(e);
         }
     });

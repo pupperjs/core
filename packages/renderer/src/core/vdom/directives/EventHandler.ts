@@ -1,7 +1,9 @@
 import { directive, mapAttributes, replaceWith } from "../../../model/Directive";
 import { evaluateLater } from "../../../model/Evaluator";
 
-const debug = require("debug")("pupper:vdom:on");
+import Debugger from "../../../util/Debugger";
+
+const debug = Debugger.extend("vdom:on");
 
 mapAttributes(replaceWith("@", "x-on:"));
 
@@ -13,15 +15,20 @@ directive("on", async (node, { value, expression, scope }) => {
     try {
         const evaluate = expression ? evaluateLater(expression) : () => {};
 
+        debug("will handle event \"%s\" to %O", value, evaluate);
+
         node.addEventListener(value, async ($event: any) => {
             debug("handled %s event", value);
-            evaluate(scope);
+            
+            const evScope = { ...scope, $event };
+
+            evaluate(evScope);
         });
 
         // Remove the prop from the node
         node.removeAttribute("x-on:" + value);
     } catch(e) {
-        console.warn("[pupperjs] failed to evaluate event handler:");
+        console.warn("[pupper.js] failed to evaluate event handler:");
         console.error(e);
     }
 });

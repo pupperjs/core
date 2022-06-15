@@ -125,6 +125,8 @@ export class PrepareComponents extends Hook {
                     // Extract all single params
                     const singleParams = matchedParams.matchAll(singleParamRegExp);
 
+                    let attributes = tagData.attributes;
+
                     // Iterate over all params
                     for(let param of singleParams) {
                         // If it doesn't have a initializer
@@ -133,8 +135,11 @@ export class PrepareComponents extends Hook {
                         }
 
                         // Strictly add an "undefined" initializer to it
-                        implContent = implContent.replace(param[0].trim(), param[0].trim() + " = undefined");
+                        attributes = attributes.replace(param[0].trim(), param[0].trim() + " = undefined");
                     }
+
+                    // Replace the attributes with the new ones
+                    implContent = implContent.replace(tagData.attributes, attributes);
 
                     // Skip the params lines
                     implLine += matchedParams.split("\n").length;
@@ -148,7 +153,7 @@ export class PrepareComponents extends Hook {
                 ...implContent.split("\n")
             );
 
-            this.compiler.debugger.log(lines);
+            this.compiler.debugger.log(lines.join("\n"));
 
             break;
         }

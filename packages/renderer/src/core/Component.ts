@@ -249,6 +249,10 @@ export class Component {
             target.append(rendered);
         }
 
+        if ("mounted" in this.$component) {
+            this.$component.mounted.call(this);
+        }
+
         return rendered;
     }
 }

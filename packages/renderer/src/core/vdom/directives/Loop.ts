@@ -82,7 +82,7 @@ directive("for", async (node, { expression, scope }) => {
 
             node.parent.setDirty();
         } catch(e) {
-            console.warn("[pupperjs] The following information can be useful for debugging:");
+            console.warn("[pupper.js] The following information can be useful for debugging:");
             console.warn("last scope:", loopScope);
             console.error(e);
         }

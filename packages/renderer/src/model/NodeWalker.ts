@@ -1,6 +1,8 @@
 import { PupperNode } from "../core/vdom/Node";
 import { directives } from "./Directive";
 
+import * as Debugger from "../util/Debugger";
+
 export async function walk<TNode extends PupperNode | PupperNode[]>(nodes: TNode, scope: any = null): Promise<TNode> {
     if (!Array.isArray(nodes)) {
         return await node(nodes as PupperNode, scope) as TNode;
@@ -38,26 +40,26 @@ export async function walk<TNode extends PupperNode | PupperNode[]>(nodes: TNode
 }
 
 async function node(node: PupperNode | undefined, scope: any) {
-    console.group(node.tag, node.getAttributesAndProps(), node);
+    Debugger.group(node.tag, node.getAttributesAndProps(), node);
 
     // If it's an invalid node
     if (!node) {
-        console.groupEnd();
+        Debugger.endGroup();
         // Ignore it
         return undefined;
     }
 
     // Ignore if it's a string
     if (typeof node === "string") {
-        console.info("node is a string");
-        console.groupEnd();
+        Debugger.info("node is a string");
+        Debugger.endGroup();
         return node;
     }
 
     // Ignore if it's being ignored
     if (node.isBeingIgnored()) {
-        console.info("node is being ignored");
-        console.groupEnd();
+        Debugger.info("node is being ignored");
+        Debugger.endGroup();
         return node;
     }
 
@@ -70,8 +72,8 @@ async function node(node: PupperNode | undefined, scope: any) {
 
     // If the node was removed, stop parsing
     if (!node.exists()) {
-        console.info("node was removed");
-        console.groupEnd();
+        Debugger.info("node was removed");
+        Debugger.endGroup();
         return node;
     }
 
@@ -82,12 +84,12 @@ async function node(node: PupperNode | undefined, scope: any) {
 
     // If it's non-renderable
     if (!node.isRenderable()) {
-        console.info("node is not renderable");
+        Debugger.info("node is not renderable");
         // Allow parsing its children but prevent itself from being rendered.
         return undefined;
     }
 
-    console.groupEnd();
+    Debugger.endGroup();
 
     return node;
 }

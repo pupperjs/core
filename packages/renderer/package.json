@@ -17,7 +17,6 @@
   "types": "./types/",
   "devDependencies": {
     "@types/node": "^16.7.6",
-    "@types/virtual-dom": "^2.1.1",
     "cross-env": "^7.0.3",
     "debug": "^4.3.4",
     "tsc": "^2.0.3",

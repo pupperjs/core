@@ -71,7 +71,10 @@ export class PupperCompiler {
         }
 
         // Create the debug logger
-        this.debugger = new Console(createWriteStream(process.cwd() + "/.logs/log.log"), createWriteStream(process.cwd() + "/.logs/error.log"));
+        this.debugger = new Console(
+            createWriteStream(process.cwd() + "/.logs/log.log", { flags: "a" }),
+            createWriteStream(process.cwd() + "/.logs/error.log", { flags: "a" })
+        );
     }
 
     /**

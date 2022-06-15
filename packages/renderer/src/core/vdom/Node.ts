@@ -4,8 +4,11 @@ import h from "virtual-dom/h";
 import diff from "virtual-dom/diff";
 import patch from "virtual-dom/patch";
 import VComment from "virtual-dom/vnode/vcomment";
+import VText from "virtual-dom/vnode/vtext";
 
-const debug = require("debug")("pupper:vdom:node");
+import Debugger from "../../util/Debugger";
+
+const debug = Debugger.extend("vdom:node");
 
 const Hook = (callback: CallableFunction) => {
     const hook = function() {};
@@ -37,25 +40,41 @@ export class PupperNode<TNode extends VirtualDOM.VTree = any> {
         public parent: PupperNode = null,
         public renderer: Renderer
     ) {
-        if (typeof node !== "string") {
-            // Initialize the properties
-            this.tag = "tagName" in node ? node.tagName : "TEXT";
+        this.initNode();
+    }
 
-            if (node instanceof VComment) {
-                this.tag = "!";
-            }
+    /**
+     * Initializes the node data.
+     * @returns 
+     */
+    private initNode() {
+        if (typeof this.node === "string") {
+            return;
+        }
 
-            if ("properties" in node) {
-                if ("attrs" in node.properties) {
-                    this.attributes = Object.assign(this.attributes, node.properties.attrs);
+        // If it's a text node
+        if (this.node instanceof VText) {
+            this.node = this.node.text;
+            return;
+        }
+
+        // Initialize the properties
+        this.tag = "tagName" in this.node ? this.node.tagName : "TEXT";
+
+        if (this.node instanceof VComment) {
+            this.tag = "!";
+        } else {
+            if ("properties" in this.node) {
+                if ("attrs" in this.node.properties) {
+                    this.attributes = Object.assign(this.attributes, this.node.properties.attrs);
                 }
 
-                if ("props" in node.properties) {
-                    this.properties = Object.assign(this.properties, node.properties.props);
+                if ("props" in this.node.properties) {
+                    this.properties = Object.assign(this.properties, this.node.properties.props);
                 }
 
-                if ("on" in node.properties) {
-                    this.eventListeners = Object.assign(this.eventListeners, node.properties.on as any);
+                if ("on" in this.node.properties) {
+                    this.eventListeners = Object.assign(this.eventListeners, this.node.properties.on as any);
                 }
             } else {
                 this.attributes = {};
@@ -63,12 +82,9 @@ export class PupperNode<TNode extends VirtualDOM.VTree = any> {
                 this.eventListeners = {};
             }
 
-            if ("children" in node) {
-                this.children = node.children.map((child) => new PupperNode(child, this, renderer));
+            if ("children" in this.node) {
+                this.children = this.node.children.map((child) => new PupperNode(child, this, this.renderer));
             }
-        } else {
-            this.tag = "TEXT";
-            this.text = node;
         }
     }
 
@@ -269,8 +285,6 @@ export class PupperNode<TNode extends VirtualDOM.VTree = any> {
         // @ts-ignore
         const comment = new PupperNode(h.c("!"), this.parent, this.renderer);
 
-        console.log(comment);
-
         this.replaceWith(comment);
 
         return comment;
@@ -283,7 +297,10 @@ export class PupperNode<TNode extends VirtualDOM.VTree = any> {
      */
     public addEventListener(event: keyof DocumentEventMap | string, listener: EventListenerOrEventListenerObject) {
         this.eventListeners[event] = this.eventListeners[event] || [];
-        this.eventListeners[event].push(listener);
+
+        if (!this.eventListeners[event].includes(listener)) {
+            this.eventListeners[event].push(listener);
+        }
     }
 
     /**
@@ -440,6 +457,21 @@ export class PupperNode<TNode extends VirtualDOM.VTree = any> {
     }
 
     /**
+     * Called when the element has been added to the DOM.
+     * @param node The node element.
+     */
+    private onElementCreated(node: Element) {
+        this.element = node;
+
+        for(let evt in this.eventListeners) {
+            for(let handler of this.eventListeners[evt]) {
+                this.element.removeEventListener(evt, handler);
+                this.element.addEventListener(evt, handler);
+            }
+        }
+    }
+
+    /**
      * Converts the current node into a virtual DOM node.
      * @returns 
      */
@@ -449,7 +481,7 @@ export class PupperNode<TNode extends VirtualDOM.VTree = any> {
         }
 
         if (this.tag === "!") {
-            this.node = new VComment(this.text);
+            this.node = h.c(this.text) as TNode;
             return this.node;
         }
 
@@ -457,7 +489,7 @@ export class PupperNode<TNode extends VirtualDOM.VTree = any> {
             ...this.attributes,
             ...this.properties,
             $p_create: Hook((node: Element) => {
-                this.element = node;
+                this.onElementCreated(node);
             })
         };
 
@@ -465,10 +497,6 @@ export class PupperNode<TNode extends VirtualDOM.VTree = any> {
         if (properties.class) {
             properties.className = properties.class;
             delete properties.class;
-        }
-
-        for(let evt in this.eventListeners) {
-            properties["on" + evt] = this.eventListeners[evt];
         }
 
         this.node = h(

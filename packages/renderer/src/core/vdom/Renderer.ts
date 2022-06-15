@@ -8,7 +8,9 @@ import { PupperNode } from "./Node";
 import { diff, patch, create } from "virtual-dom";
 import h from "virtual-dom/h";
 
-const debug = require("debug")("pupper:vdom");
+import Debugger from "../../util/Debugger";
+
+const debug = Debugger.extend("vdom");
 
 /**
  * Most of the evaluation functions were taken from alpine.js
