@@ -71,6 +71,9 @@ directive("for", async (node, { expression, scope }) => {
                         .setParent(node.parent)
                         .setDirty(true, false)
                         .setChildrenDirty(true, false)
+
+                        // @todo new added nodes are still being ignored because the comment is ignored
+                        // strange, bug the effect is never triggered for freshly reacted items
                         .setChildrenIgnored(false);
 
                     node.insertBefore(child);
@@ -88,7 +91,7 @@ directive("for", async (node, { expression, scope }) => {
         }
     });
 
-    node.addEventListener("removed", removeEffect);
+    node.addEventListener("DOMNodeRemoved", removeEffect);
 });
 
 /**

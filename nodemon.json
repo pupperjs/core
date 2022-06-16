@@ -1,6 +1,6 @@
 {
     "$schema": "https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/nodemon.json",
-    "watch": ["./src/webpack-loader/**/*", "./src/compiler/out/**/*.js"],
+    "watch": ["./src/webpack-loader/**/*", "./src/**/*"],
     "ext": "js",
     "exec": "webpack",
     "env": {

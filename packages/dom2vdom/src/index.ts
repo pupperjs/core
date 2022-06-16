@@ -27,7 +27,7 @@ class Converter {
     public convertNode(node: Node | Element) {
         // If it's not an element
         if (!(node instanceof Element)) {
-            return JSON.stringify(node.textContent);
+            return node.textContent;
         }
 
         const properties: Record<string, Record<string, Attr>> = {};

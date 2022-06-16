@@ -37,7 +37,17 @@ export function debug(message: string, ...args: any[]) {
  * @returns 
  */
 export function info(message: string, ...args: any[]) {
-    return debug("%c" + message, ...["color: aqua", ...args])
+    return logger("%c" + message, ...["color: aqua", ...args])
+}
+
+/**
+ * Prints a debug warning message to the console.
+ * @param message The message to be displayed, in sprintf format.
+ * @param args Any arguments to be passed to the message sprintf.
+ * @returns 
+ */
+ export function warn(message: string, ...args: any[]) {
+    return logger("%c" + message, ...["color: yellow", ...args])
 }
 
 /**
@@ -64,8 +74,7 @@ export function endGroup() {
  */
 export function toggleLogger() {
     if (enabled) {
-        debuggerModule.enable("pupper");
-        debuggerModule.enable("pupper:*");
+        debuggerModule.enable("pupper pupper:*");
     } else {
         debuggerModule.disable("pupper");
         debuggerModule.disable("pupper:*");
@@ -94,7 +103,8 @@ const Debugger = {
     toggleDebug,
     info,
     debug,
-    extend
+    extend,
+    warn
 } as const;
 
 export default Debugger;

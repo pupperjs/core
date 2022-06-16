@@ -5,7 +5,6 @@ export class PupperToAlpineHook extends Hook {
     public static Attributes: Record<string, string> = {
         "p-show": "x-show",
         "p-on": "x-on",
-        "p-text": "x-text",
         "p-html": "x-html",
         "p-model": "x-model",
         "p-modelable": "x-modelable",

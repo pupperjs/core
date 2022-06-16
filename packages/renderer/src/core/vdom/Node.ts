@@ -31,12 +31,12 @@ export class PupperNode<TNode extends VirtualDOM.VTree = any> {
     private dirty: boolean = true;
     private patching: boolean = false;
     private renderable: boolean = true;
+    public replacedWith: PupperNode[] = null;
 
-    public text: string = "";
     public element: Element = null;
 
     constructor(
-        protected node: TNode | string,
+        public node: TNode | string,
         public parent: PupperNode = null,
         public renderer: Renderer
     ) {
@@ -94,6 +94,22 @@ export class PupperNode<TNode extends VirtualDOM.VTree = any> {
      */
     public wasRendered() {
         return this.element !== null;
+    }
+
+    /**
+     * Checks if this node was replaced.
+     * @returns 
+     */
+    public wasReplaced() {
+        return this.replacedWith !== null;
+    }
+
+    /**
+     * Retrieves the nodes which this node was replaced with.
+     * @returns 
+     */
+    public getReplacement() {
+        return this.replacedWith;
     }
 
     /**
@@ -170,6 +186,14 @@ export class PupperNode<TNode extends VirtualDOM.VTree = any> {
      */
     public isRenderable() {
         return this.renderable;
+    }
+
+    /**
+     * Checks if it's a string node.
+     * @returns 
+     */
+    public isString() {
+        return typeof this.node === "string";
     }
 
     /**
@@ -267,12 +291,20 @@ export class PupperNode<TNode extends VirtualDOM.VTree = any> {
             return nodes;
         }
 
+        const replacement = nodes.map((node) =>
+            !(node instanceof PupperNode) ?
+                new PupperNode(node, this.parent, this.renderer) :
+                node
+        ) as PupperNode[];
+
         this.parent.children.splice(
             this.getIndex(),
             1,
             // @ts-ignore
-            ...nodes.map((node) => !(node instanceof PupperNode) ? new PupperNode(node, this.parent, this.renderer) : node)
+            ...replacement
         );
+
+        this.replacedWith = replacement;
 
         return nodes;
     }
@@ -282,7 +314,6 @@ export class PupperNode<TNode extends VirtualDOM.VTree = any> {
      * @returns 
      */
     public replaceWithComment() {
-        // @ts-ignore
         const comment = new PupperNode(h.c("!"), this.parent, this.renderer);
 
         this.replaceWith(comment);
@@ -402,13 +433,13 @@ export class PupperNode<TNode extends VirtualDOM.VTree = any> {
      * @returns 
      */
     public clone() {
-        const clonedNode = this.node === undefined ? this.text : h(this.tag, {
+        const clonedNode = this.isString() ? this.node : h(this.tag, {
             attrs: { ...this.attributes },
             props: { ...this.properties },
             on: {... this.eventListeners }
         }, []);
 
-        const clone = new PupperNode(clonedNode, this.parent, this.renderer);
+        const clone = new PupperNode(clonedNode as TNode, this.parent, this.renderer);
         clone.children = this.children.map((child) => child.clone());
 
         return clone;
@@ -481,7 +512,7 @@ export class PupperNode<TNode extends VirtualDOM.VTree = any> {
         }
 
         if (this.tag === "!") {
-            this.node = h.c(this.text) as TNode;
+            this.node = h.c("") as TNode;
             return this.node;
         }
 

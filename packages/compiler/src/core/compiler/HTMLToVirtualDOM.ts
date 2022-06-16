@@ -156,7 +156,8 @@ export class PugToVirtualDOM {
 
         this.writeLn(`h("span", {`);
             this.ident(`attrs: {\n`);
-                this.ident(`"x-${node.mustEscape ? "text": "html"}": "${node.val.replace(/"/g, '\\"')}"\n`);
+                this.ident(`"x-html": "${node.val.replace(/"/g, '\\"')}",\n`);
+                this.ident(`"x-escape": ${node.mustEscape}\n`);
             this.outdent(`}\n`);
         this.outdent(`})`);
     }

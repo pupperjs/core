@@ -45,14 +45,22 @@ directive("if", async (node, { expression, scope }) => {
             // If the conditional matched
             if (value) {
                 // Clone them into the DOM
-                clones = await walk(children.map((child) => child.clone().setParent(node.parent)), scope);
+                clones = await walk(
+                    children.map((child) =>
+                        child.clone()
+                            .setParent(node.parent)
+                            .setDirty(true, false)
+                            .setChildrenDirty(true, false)
+                            .setChildrenIgnored(false)
+                    ), scope);
+                
                 node.insertBefore(...clones);
             }
 
             node.parent.setDirty();
         } catch(e) {
             console.warn("[pupper.js] failed to evaluate conditional:");
-            console.error(e);
+            throw e;
         }
     });
 });
