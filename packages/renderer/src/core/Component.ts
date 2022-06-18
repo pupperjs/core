@@ -1,20 +1,6 @@
 import { reactive } from "../model/Reactivity";
 import { Renderer } from "./vdom/Renderer";
-
-/**
- * Represents a slot.
- */
-interface Slot {
-    /**
-     * The comment holding the slot position.
-     */
-    container: HTMLElement | Comment;
-
-    /**
-     * All fallback nodes
-     */
-    fallbackNodes: Node[]
-}
+import { Slot } from "./vdom/renderer/Slot";
 
 /**
  * Represents a component's data.
@@ -198,7 +184,6 @@ export class Component {
 
             // Find all slots, templates and references
             const slots = Array.from(renderContainer.querySelectorAll("slot"));
-            const templates = Array.from(renderContainer.querySelectorAll("template"));
             const refs = Array.from(renderContainer.querySelectorAll("[ref]"));
 
             // Iterate over all slots
@@ -209,24 +194,8 @@ export class Component {
                 // If it's a named slot
                 if (slot.hasAttribute("name")) {
                     // Save it
-                    this.$slots[slot.getAttribute("name")] = {
-                        container: comment,
-                        fallbackNodes: [...comment.childNodes]
-                    };
-                }
-            }
-
-            // Iterate over all templates
-            for(let childrenTemplate of templates) {
-                // If it's a named template
-                if (childrenTemplate.hasAttribute("name")) {
-                    // Remove it from the DOM
-                    childrenTemplate.parentElement.removeChild(childrenTemplate);
-
-                    // Save it
-                    this.$templates[childrenTemplate.getAttribute("name")] = () => {
-                        return [...childrenTemplate.content.children].map((node) => node.innerHTML);
-                    };
+                    this.$slots[slot.getAttribute("name")] = new Slot(comment.childNodes);
+                    this.$slots[slot.getAttribute("name")].container = comment;
                 }
             }
 
@@ -252,8 +221,8 @@ export class Component {
         const rendered = await this.render();
 
         // If it's targeting a slot
-        if (!(target instanceof HTMLElement)) {
-            target.container.replaceWith(rendered);
+        if (target instanceof Slot) {
+            target.replaceWith(rendered);
         } else {
             target.append(rendered);
         }

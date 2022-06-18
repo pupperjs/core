@@ -3,6 +3,7 @@
     "compilerOptions": {
         "target": "esnext",
         "outDir": "./out",
+        "baseUrl": "./src",
         "declarationDir": "./types",
         "typeRoots": [
             "./src/typings/",

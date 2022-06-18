@@ -36,33 +36,41 @@ export class ConditionalNode extends PupperNode {
     public clone() {
         const clone = new ConditionalNode(this.node, this.parent, this.renderer);
 
-        clone.consequent = this.cloneConsequence();
-        clone.alternate = this.cloneAlternative();
+        clone.consequent = this.cloneConsequent();
+        clone.alternate = this.cloneAlternate();
 
         return clone;
     }
 
-    public hasConsequence() {
+    /**
+     * Determines if has the conditional has a consequence (then).
+     * @returns 
+     */
+    public hasConsequent() {
         return this.consequent !== undefined;
     }
-
-    public getConsequence() {
-        return this.consequent;
-    }
-
-    public hasAlternative() {
+    
+    /**
+     * Determines if has the conditional has an alternative (else).
+     * @returns 
+     */
+    public hasAlternate() {
         return this.alternate !== undefined;
     }
 
-    public getAlternative() {
-        return this.alternate;
+    /**
+     * Clone the consequent nodes.
+     * @returns 
+     */
+    public cloneConsequent() {
+        return this.consequent.map((child) => child.clone().setParent(this));
     }
 
-    public cloneConsequence() {
-        return this.consequent.map((child) => child.clone());
-    }
-
-    public cloneAlternative() {
-        return this.alternate?.map((child) => child.clone());
+    /**
+     * Clone the alternate nodes.
+     * @returns 
+     */
+    public cloneAlternate() {
+        return this.alternate?.map((child) => child.clone().setParent(this));
     }
 }

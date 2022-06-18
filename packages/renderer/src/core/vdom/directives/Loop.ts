@@ -16,8 +16,6 @@ directive("for", async (node: LoopNode, { expression, scope }) => {
     const loopData = parseForExpression(expression);
     const evaluate = evaluateLater(loopData.items);
 
-    console.warn(node.body);
-
     const removeEffect = await effect(async () => {        
         let loopScope;
 
@@ -76,6 +74,7 @@ directive("for", async (node: LoopNode, { expression, scope }) => {
                 }
             }
 
+            node.setIgnored();
             node.setDirty().setChildrenDirty(true, false);
         } catch(e) {
             Debugger.error("failed to evaluate for loop");

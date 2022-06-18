@@ -8,10 +8,6 @@ import VText from "virtual-dom/vnode/vtext";
 
 import Debugger from "../../util/Debugger";
 
-import { LoopNode } from "../../core/vdom/nodes/LoopNode";
-import { ConditionalNode } from "../../core/vdom/nodes/ConditionalNode";
-import VNode from "virtual-dom/vnode/vnode";
-
 const debug = Debugger.extend("vdom:node");
 
 interface IHookFn extends Function {
@@ -38,10 +34,24 @@ function Hook<TProps extends {
 };
 
 export class RendererNode<TNode extends VirtualDOM.VTree = any> {
+    /**
+     * The children nodes for this node.
+     */
     public children: RendererNode[] = [];
 
+    /**
+     * The properties for this node.
+     */
     public properties: Record<string, string | boolean | number | IHookFn> = {};
+
+    /**
+     * The attributes for this node.
+     */
     public attributes: Record<string, string | boolean | number> = {};
+
+    /**
+     * The event listeners for this node.
+     */
     public eventListeners: Record<string, EventListenerOrEventListenerObject[]> = {};
 
     /**
@@ -389,24 +399,24 @@ export class RendererNode<TNode extends VirtualDOM.VTree = any> {
     /**
      * Adds an event listener to this node.
      * @param event The event name to be added.
-     * @param listener The event callback.
+     * @param callback The event callback.
      */
-    public addEventListener(event: keyof DocumentEventMap | string, listener: EventListenerOrEventListenerObject) {
+    public addEventListener(event: keyof DocumentEventMap | string, callback: EventListener) {
         this.eventListeners[event] = this.eventListeners[event] || [];
 
-        if (!this.eventListeners[event].includes(listener)) {
-            this.eventListeners[event].push(listener);
+        if (!this.eventListeners[event].includes(callback)) {
+            this.eventListeners[event].push(callback);
         }
     }
 
     /**
      * Removes a callback from an event listener.
      * @param event The event name.
-     * @param listener The callback to be removed.
+     * @param callback The callback to be removed.
      */
-    public removeEventListener(event: keyof DocumentEventMap | string, listener: EventListenerOrEventListenerObject) {
+    public removeEventListener(event: keyof DocumentEventMap | string, callback: EventListenerOrEventListenerObject) {
         this.eventListeners[event].splice(
-            this.eventListeners[event].indexOf(listener),
+            this.eventListeners[event].indexOf(callback),
             1
         );
     }
@@ -642,10 +652,22 @@ export class RendererNode<TNode extends VirtualDOM.VTree = any> {
 
         for(let evt in this.eventListeners) {
             for(let handler of this.eventListeners[evt]) {
-                this.element.removeEventListener(evt, handler);
                 this.element.addEventListener(evt, handler);
             }
         }
+    }
+
+    /**
+     * Called when the element has been removed from the DOM.
+     */
+    private onElementRemoved() {
+        for(let evt in this.eventListeners) {
+            for(let handler of this.eventListeners[evt]) {
+                this.element.removeEventListener(evt, handler);
+            }
+        }
+
+        this.element = null;
     }
 
     /**
@@ -663,12 +685,15 @@ export class RendererNode<TNode extends VirtualDOM.VTree = any> {
             return this.node;
         }
 
-        // If has no $p_create hook yet
-        if (!("$p_create" in this.properties)) {
+        // If has no $pupper hook yet
+        if (!("$pupper" in this.properties)) {
             // Create the hook
-            this.properties["$p_create"] = Hook({
+            this.properties["$pupper"] = Hook({
                 hook: (node: Element) => {
                     this.onElementCreated(node);
+                },
+                unhook: () => {
+                    this.onElementRemoved();
                 }
             });
         }

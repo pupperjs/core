@@ -3,11 +3,8 @@
     "compilerOptions": {
         "outDir": "./out",
         "baseUrl": "./src",
-        "declarationDir": "./types",
-        "paths": {
-            "@/*": ["./*"]
-        }
+        "declarationDir": "./types"
     },
-    "include": ["./src/*.ts", "./src/typings/**/*.d.ts"],
+    "include": ["./src/**/*.ts", "./src/typings/**/*.d.ts"],
     "exclude": ["node_modules"],
 }

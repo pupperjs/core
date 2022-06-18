@@ -1,4 +1,4 @@
-import { RendererNode } from "@/model/vdom/RendererNode";
+import { RendererNode } from "../../../model/vdom/RendererNode";
 import { directive } from "../../../model/Directive";
 import { evaluateLater } from "../../../model/Evaluator";
 import { walk } from "../../../model/NodeWalker";
@@ -18,7 +18,7 @@ directive("if", async (node: ConditionalNode, { expression, scope }) => {
 
     let lastValue: boolean = null;
 
-    if (!node.hasConsequence()) {
+    if (!node.hasConsequent()) {
         Debugger.error("node %O has no consequence.", node);
     }
 
@@ -43,23 +43,26 @@ directive("if", async (node: ConditionalNode, { expression, scope }) => {
 
             // If the conditional matched
             if (value) {
-                cloned = await walk(node.cloneConsequence(), scope);
+                cloned = node.cloneConsequent();
             } else
             // If has an alternate
-            if (node.hasAlternative()) {
-                cloned = await walk(node.cloneAlternative(), scope);
+            if (node.hasAlternate()) {
+                cloned = node.cloneAlternate();
             }
 
             if (cloned) {
                 // Clone it into the DOM
                 node.append(
-                    ...cloned
+                    ...await walk(cloned, scope)
                 );
             }
 
+            node.setIgnored();
             node.setDirty().setChildrenDirty(true, false);
         } catch(e) {
-            Debugger.error("failed to evaluate conditional:");
+            Debugger.error("failed to evaluate conditional \"%s\"", expression);
+            Debugger.error("last scope was %O", scope);
+
             throw e;
         }
 

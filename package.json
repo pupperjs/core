@@ -12,6 +12,9 @@
     "./packages/webpack-loader"
   ],
   "scripts": {
+    "build": "cross-env NODE_ENV=production npm-run-all -s build:*",
+    "build:compiler": "cd packages/compiler && yarn build",
+    "build:renderer": "cd packages/renderer && yarn build",
     "watch": "npm-run-all -p watch:*",
     "watch:compiler": "cd packages/compiler && yarn watch",
     "watch:renderer": "cd packages/renderer && yarn watch",
@@ -19,6 +22,7 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "source-map-loader": "^3.0.0",
     "source-map-support": "^0.5.21",
     "webpack": "^5.51.1",
