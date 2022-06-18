@@ -1,28 +1,27 @@
+import Debugger from "../../../util/Debugger";
 import { directive } from "../../../model/Directive";
 import { evaluateLater } from "../../../model/Evaluator";
 import { walk } from "../../../model/NodeWalker";
 import { effect } from "../../../model/Reactivity";
 import { IsNumeric, IsObject } from "../../../util/ObjectUtils";
-import { PupperNode } from "../Node";
+import { LoopNode } from "../nodes/LoopNode";
+
+const debug = Debugger.extend("vdom:directives:loop");
 
 /**
  * @directive x-for
  * @description Recursively renders a node's children nodes.
  */
-directive("for", async (node, { expression, scope }) => {
+directive("for", async (node: LoopNode, { expression, scope }) => {
     const loopData = parseForExpression(expression);
     const evaluate = evaluateLater(loopData.items);
 
-    // Save and remove the children
-    const children = node.children;
-    node = node.replaceWithComment();
-    node.setIgnored();
-    node.setRenderable(false);
-
-    let clones: PupperNode[] = [];
+    console.warn(node.body);
 
     const removeEffect = await effect(async () => {        
         let loopScope;
+
+        debug("running");
 
         try {
             let items = await evaluate(scope);
@@ -41,11 +40,8 @@ directive("for", async (node, { expression, scope }) => {
                 items = [];
             }
 
-            // Clear the older nodes if needed
-            if (clones.length) {
-                clones.forEach((clone) => clone.delete());
-                clones = [];
-            }
+            // Clear the current children
+            node.clearChildren();
 
             // Iterate over all evaluated items
             for(let index = 0; index < items.length; index++) {
@@ -65,30 +61,31 @@ directive("for", async (node, { expression, scope }) => {
                     loopScope[loopData.collection] = items;
                 }
 
-                for(let child of children) {
+                for(let child of node.body) {
+                    // Clone it
                     child = child.clone()
+                        .setParent(node)
                         .setIgnored(false)
-                        .setParent(node.parent)
-                        .setDirty(true, false)
-                        .setChildrenDirty(true, false)
-
-                        // @todo new added nodes are still being ignored because the comment is ignored
-                        // strange, bug the effect is never triggered for freshly reacted items
                         .setChildrenIgnored(false);
 
-                    node.insertBefore(child);
+                    // Append it to the children
+                    node.appendChild(child);
 
+                    // Walk through it
                     child = await walk(child, loopScope);
-                    clones.push(child);
                 }
             }
 
-            node.parent.setDirty();
+            node.setDirty().setChildrenDirty(true, false);
         } catch(e) {
-            console.warn("[pupper.js] The following information can be useful for debugging:");
-            console.warn("last scope:", loopScope);
-            console.error(e);
+            Debugger.error("failed to evaluate for loop");
+            Debugger.error("the following information can be useful for debugging:");
+            Debugger.error("last scope: %o", loopScope);
+            
+            throw e;
         }
+
+        debug("ended");
     });
 
     node.addEventListener("DOMNodeRemoved", removeEffect);

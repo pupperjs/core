@@ -1,10 +1,11 @@
+import { RendererNode } from "@/model/vdom/RendererNode";
 import { directive } from "../../../model/Directive";
 import { evaluateLater } from "../../../model/Evaluator";
 import { walk } from "../../../model/NodeWalker";
 import { effect } from "../../../model/Reactivity";
-import { PupperNode } from "../Node";
 
 import Debugger from "../../../util/Debugger";
+import { ConditionalNode } from "../nodes/ConditionalNode";
 
 const debug = Debugger.extend("vdom:directives:conditional");
 
@@ -12,19 +13,18 @@ const debug = Debugger.extend("vdom:directives:conditional");
  * @directive x-if
  * @description Conditionally renders a tag's children nodes if the condition is met.
  */
-directive("if", async (node, { expression, scope }) => {
+directive("if", async (node: ConditionalNode, { expression, scope }) => {
     const evaluate = evaluateLater(expression);
 
-    // Save and remove the children
-    const children = node.children;
-    node = node.replaceWithComment();
-    node.setIgnored();
-    node.setRenderable(false);
+    let lastValue: boolean = null;
 
-   let clones: PupperNode[] = [];
-   let lastValue: boolean = null;
+    if (!node.hasConsequence()) {
+        Debugger.error("node %O has no consequence.", node);
+    }
 
-    await effect(async () => {
+    const removeEffect = await effect(async () => {
+        debug("running");
+
         try {
             const value = await evaluate(scope);
 
@@ -36,31 +36,35 @@ directive("if", async (node, { expression, scope }) => {
 
             debug("%s evaluated to %O", expression, value);
 
-            // If already rendered the clones
-            if (clones.length) {
-                clones.forEach((clone) => clone.delete());
-                clones = [];
-            }
+            // Clear the current children
+            node.clearChildren();
+
+            let cloned: RendererNode[];
 
             // If the conditional matched
             if (value) {
-                // Clone them into the DOM
-                clones = await walk(
-                    children.map((child) =>
-                        child.clone()
-                            .setParent(node.parent)
-                            .setDirty(true, false)
-                            .setChildrenDirty(true, false)
-                            .setChildrenIgnored(false)
-                    ), scope);
-                
-                node.insertBefore(...clones);
+                cloned = await walk(node.cloneConsequence(), scope);
+            } else
+            // If has an alternate
+            if (node.hasAlternative()) {
+                cloned = await walk(node.cloneAlternative(), scope);
             }
 
-            node.parent.setDirty();
+            if (cloned) {
+                // Clone it into the DOM
+                node.append(
+                    ...cloned
+                );
+            }
+
+            node.setDirty().setChildrenDirty(true, false);
         } catch(e) {
-            console.warn("[pupper.js] failed to evaluate conditional:");
+            Debugger.error("failed to evaluate conditional:");
             throw e;
         }
+
+        debug("ended");
     });
+
+    node.addEventListener("DOMNodeRemoved", removeEffect);
 });

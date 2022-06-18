@@ -42,7 +42,7 @@ export class EachNode extends CompilerNode<Pug.Nodes.EachNode> {
 
         return CompilerNode.parseNodeIntoPugNode({
             type: "Tag",
-            name: "template",
+            name: "$",
             attributes: {
                 "x-for": parsedConditional
             },

@@ -10,16 +10,29 @@ const debug = Debugger.extend("reactivity");
 
 const ProxySymbol = Symbol("$Proxy");
 
+/**
+ * Merges multiple proxies / objects into one.
+ * @param objects All proxies / objects to be merged
+ * @returns 
+ */
+export function mergeProxies(objects: Record<string, any>[]) {
+    return reactive(
+        objects.reduce((carrier, obj) => {
+            for(let key in obj) {
+                carrier[key] = obj[key];
+            }
+
+            return carrier;
+        }, {})
+    );
+}
+
 export async function effect(effect: TEffect) {
     currentEffect = effect;
-
-    debug("processing effect %O", effect);
 
     // Calling the effect immediately will make it
     // be detected and registered at the effects handler.
     await effect();
-
-    debug("effect was processed");
 
     currentEffect = null;
 

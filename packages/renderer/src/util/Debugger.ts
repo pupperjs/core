@@ -1,5 +1,42 @@
 const debuggerModule = require("debug");
 
+enum EConsoleLevel {
+    DEBUG,
+    LOG,
+    INFO,
+    WARN,
+    ERROR
+}
+
+let consoleType: EConsoleLevel = null;
+
+debuggerModule.log = (...args: any[]) => {
+    switch(consoleType) {
+        default:
+        case EConsoleLevel.LOG:
+            console.log(...args);
+        break;
+
+        case EConsoleLevel.DEBUG:
+            console.debug(...args);
+        break;
+
+        case EConsoleLevel.INFO:
+            console.info(...args);
+        break;
+
+        case EConsoleLevel.WARN:
+            console.warn(...args);
+        break;
+
+        case EConsoleLevel.ERROR:
+            console.error(...args);
+        break;
+    }
+
+    consoleType = null;
+};
+
 type FLogger = (message: string, ...args: any[]) => void;
 
 export let enabled = localStorage.getItem("pupperjs:debug") === "1";
@@ -27,6 +64,7 @@ export function extend(namespace: string) {
  * @returns 
  */
 export function debug(message: string, ...args: any[]) {
+    consoleType = EConsoleLevel.DEBUG;
     return logger(message, ...args);
 }
 
@@ -37,6 +75,7 @@ export function debug(message: string, ...args: any[]) {
  * @returns 
  */
 export function info(message: string, ...args: any[]) {
+    consoleType = EConsoleLevel.INFO;
     return logger("%c" + message, ...["color: aqua", ...args])
 }
 
@@ -46,8 +85,20 @@ export function info(message: string, ...args: any[]) {
  * @param args Any arguments to be passed to the message sprintf.
  * @returns 
  */
- export function warn(message: string, ...args: any[]) {
-    return logger("%c" + message, ...["color: yellow", ...args])
+export function warn(message: string, ...args: any[]) {
+    consoleType = EConsoleLevel.WARN;
+    return logger(message, ...args)
+}
+
+/**
+ * Prints a debug error message to the console.
+ * @param message The message to be displayed, in sprintf format.
+ * @param args Any arguments to be passed to the message sprintf.
+ * @returns 
+ */
+export function error(message: string, ...args: any[]) {
+    consoleType = EConsoleLevel.ERROR;
+    return logger(message, ...args)
 }
 
 /**
@@ -104,7 +155,8 @@ const Debugger = {
     info,
     debug,
     extend,
-    warn
+    warn,
+    error
 } as const;
 
 export default Debugger;

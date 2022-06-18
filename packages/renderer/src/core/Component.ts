@@ -150,6 +150,15 @@ export class Component {
     }
 
     /**
+     * Enqueues a function to be executed in the next queue tick.
+     * @param callback — The callback to be executed.
+     * @returns 
+     */
+    public $nextTick(callback: CallableFunction) {
+        return this.renderer.nextTick(callback);
+    }
+
+    /**
      * Registers a single template.
      * @param templateName The template name.
      * @param template The template render function.
@@ -185,7 +194,7 @@ export class Component {
         if (this.firstRender) {
             this.firstRender = false;
 
-            renderContainer = await this.renderer.renderFirst();
+            renderContainer = await this.renderer.render();
 
             // Find all slots, templates and references
             const slots = Array.from(renderContainer.querySelectorAll("slot"));

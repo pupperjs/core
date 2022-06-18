@@ -3,20 +3,47 @@ import { Component } from "../Component";
 import Pupper from "../..";
 
 import { walk } from "../../model/NodeWalker";
-import { PupperNode } from "./Node";
+import { RendererNode } from "../../model/vdom/RendererNode";
 
 import { diff, patch, create } from "virtual-dom";
 import h from "virtual-dom/h";
 
 import Debugger from "../../util/Debugger";
+import { ConditionalNode } from "./nodes/ConditionalNode";
+import { LoopNode } from "./nodes/LoopNode";
+import VNode from "virtual-dom/vnode/vnode";
 
 const debug = Debugger.extend("vdom");
+
+export type TRendererNodes = RendererNode | ConditionalNode | LoopNode;
 
 /**
  * Most of the evaluation functions were taken from alpine.js
  * Thanks, alpine.js!
  */
 export class Renderer {
+    /**
+     * Creates a renderer node from a virtual DOM node.
+     * @param node The original virtual DOM node.
+     * @param parent The parent node.
+     * @param renderer The renderer related to this node.
+     * @returns 
+     */
+    public static createNode(node: VirtualDOM.VTree | string, parent: RendererNode, renderer: Renderer) {
+        if (node instanceof VNode) {
+            if ("properties" in node && "attrs" in node.properties) {
+                if ("x-if" in node.properties.attrs) {
+                    return new ConditionalNode(node, parent, renderer);
+                } else
+                if ("x-for" in node.properties.attrs) {
+                    return new LoopNode(node, parent, renderer);
+                }
+            }
+        }
+
+        return new RendererNode(node, parent, renderer);
+    }
+
     public diff = diff;
     public patch = patch;
 
@@ -43,11 +70,6 @@ export class Renderer {
      */
     private inQueue: boolean;
 
-    /**
-     * Determines if has a pending render.
-     */
-    private isRenderEnqueued: boolean;
-
     constructor(
         protected component: Component
     ) {
@@ -55,8 +77,16 @@ export class Renderer {
             // Globals
             Pupper.$global,
 
+            // Magics
+            Pupper.$magics,
+
             // Component state
             component.$state,
+
+            // Renderer-related
+            {
+                $component: component
+            }
         );
     }
 
@@ -118,21 +148,27 @@ export class Renderer {
      * Renders the virtual dom for the first time.
      * @returns 
      */
-    public async renderFirst() {
+    public async render() {
         const tick = this.nextTick(async () => {
             debug("first render");
 
             const vdom = this.component.$component.render({ h });
-            const node = new PupperNode(vdom, null, this);
+            const node = Renderer.createNode(vdom, null, this);
             const result = await walk(node, this.generateScope());
+            const vnode = result.toVNode();
 
-            this.container = create(result.toVNode() as VirtualDOM.VNode, {
-                warn: true
-            });
+            try {
+                this.container = create(vnode as VirtualDOM.VNode, {
+                    warn: true
+                });
 
-            this.rendered = true;
+                this.rendered = true;
 
-            debug("first render ended");
+                debug("first render ended");
+            } catch(e) {
+                Debugger.error("an exception ocurred while rendering a component %O", vnode);
+                throw e;
+            }
         });
 
         await this.waitForTick(tick);

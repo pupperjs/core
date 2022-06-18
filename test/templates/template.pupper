@@ -1,11 +1,10 @@
 template
-    .container
+    .container-fluid
         //- Stylesheets
-        link(href="https://getbootstrap.com/docs/4.0/dist/css/bootstrap.min.css", rel="stylesheet")
-        link(href="https://getbootstrap.com/docs/4.0/examples/cover/cover.css", rel="stylesheet")
+        link(rel="stylesheet", href="https://cdn.jsdelivr.net/npm/bootswatch@4.5.2/dist/litera/bootstrap.min.css", integrity="sha384-enpDwFISL6M3ZGZ50Tjo8m65q06uLVnyvkFO3rsoW0UC15ATBFz3QEhr3hmxpYsn", crossorigin="anonymous")
 
         .text-center
-            .cover-container.d-flex.h-100.p-3.mx-auto.flex-column
+            .d-flex.p-3.mx-auto.flex-column
                 header.masthead.mb-auto 
                     .inner
                         h3.masthead-brand=page.title
@@ -16,6 +15,8 @@ template
 
                     p.lead=page.lead
 
+                    hr.my-5
+
                     .row.mt-5.justify-content-around.align-items-center
                         if puppies === undefined || puppies.length === 0
                             ="Oh noe! No puppies to show :("
@@ -23,7 +24,7 @@ template
                             //- Render the puppies and share the onClickPuppy method with it
                             each index, puppy in puppies
                                 .col-5.mb-5
-                                    .puppy.card.px-0(:data-pop="index", :data-id="puppy.id", @click="onClickPuppy(puppy)").text-dark
+                                    .puppy.card.px-0.text-dark(:data-pop="index", :data-id="puppy.id", @click="onClickPuppy(puppy)")
                                         img.card-img-top(:src="puppy.thumbnail", crossorigin="auto")
 
                                         .card-header
@@ -33,12 +34,16 @@ template
                                         .card-body
                                             !=puppy.description
 
+                                            //- Displays a custom message if it's a shibe
                                             if puppy.shibe === true
                                                 p.text-warning="shibbe!!!"
 
+                                            //- Displays a puppy properties
                                             if puppy.properties
-                                                each property in puppy.properties
-                                                    span.badge.badge-info=property
+                                                .row.justify-content-center.mt-3
+                                                    each property in puppy.properties
+                                                        .col
+                                                            span.badge.badge-info.w-100=property
 
                     div 
                         |Testing slots: 
@@ -85,4 +90,15 @@ implementation
 
     when#mounted
         console.log("The component was mounted.");
-        ImportedComponent.mount(this.$slots.slot);
+
+        this.$nextTick(() => {
+            this.puppies.push({
+                id: 3,
+                title: "Wow, a shibe!",
+                description: "Cute shiberino!!!",
+                thumbnail: "https://media.istockphoto.com/photos/happy-shiba-inu-dog-on-yellow-redhaired-japanese-dog-smile-portrait-picture-id1197121742?k=20&m=1197121742&s=170667a&w=0&h=SDkUmO-JcBKWXl7qK2GifsYzVH19D7e6DAjNpAGJP2M=",
+                shibe: true
+            });
+        });
+
+        //ImportedComponent.mount(this.$slots.slot);

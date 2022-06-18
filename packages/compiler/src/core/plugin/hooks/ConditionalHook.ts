@@ -1,3 +1,5 @@
+import { CompilerNode } from "../../../model/core/nodes/CompilerNode";
+import Plugin from "../../Plugin";
 import { Hook } from "../Hook";
 import { ConditionalNode } from "../nodes/ConditionalNode";
 import { TagNode } from "../nodes/TagNode";
@@ -10,26 +12,45 @@ export class ConditionalHook extends Hook {
                 const consequent = node.getThen();
                 const alternate = node.getElse();
 
-                // Replace with an if <div x-if>
+                // Replace with a <$ x-if />
                 const conditional = node.replaceWith({
                     type: "Tag",
-                    name: "template",
+                    name: "$p",
                     attributes: {
                         "x-if": node.getProp("test")
-                    },
-                    children: this.plugin.parseChildren(consequent) as any
+                    }
                 }) as TagNode;
 
-                // <div x-if!>
-                if (node.hasElse()) {
-                    const elseTag = conditional.insertAfter({
-                        type: "Tag",
-                        name: "template",
-                        attributes: {
-                            "x-if": `!(${node.getProp("test")})`
+                // Add the <$ x-if-cond="consequent" /> to it
+                conditional.children.push(
+                    CompilerNode.fromCustomNode(
+                        {
+                            type: "Tag",
+                            name: "$p",
+                            attributes: {
+                                "x-if-cond": "consequent"
+                            },
+                            children: this.plugin.parseChildren(consequent) as any
                         },
-                        children: this.plugin.parseChildren(alternate) as any
-                    });
+                        conditional
+                    )
+                );
+
+                // Add the <$ x-if-cond="consequent" /> to it if needed
+                if (node.hasElse()) {
+                    conditional.children.push(
+                        CompilerNode.fromCustomNode(
+                            {
+                                type: "Tag",
+                                name: "$",
+                                attributes: {
+                                    "x-if-cond": "alternate"
+                                },
+                                children: this.plugin.parseChildren(alternate) as any
+                            },
+                            conditional
+                        )
+                    );
                 }
             }
         }

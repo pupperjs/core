@@ -317,11 +317,11 @@ export class PrepareComponents extends Hook {
         // Iterate over all children
         node.getChildren().forEach((child) => {
             // Ignore comments
-            if (child.isType("Comment")) {
+            if (child.isComment()) {
                 return;
             }
 
-            // If it's not a tag
+            // If it's not a tag or a comment
             if (!(child instanceof TagNode)) {
                 throw this.plugin.compiler.makeParseError("The implementation tag should only contain methods and events, found a " + child.getType() + ".", {
                     line: child.getLine(),

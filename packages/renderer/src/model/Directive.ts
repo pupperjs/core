@@ -1,5 +1,5 @@
-import { PupperNode } from "../core/vdom/Node";
-import { Renderer } from "../core/vdom/Renderer";
+import { RendererNode } from "./vdom/RendererNode";
+import { Renderer, TRendererNodes } from "../core/vdom/Renderer";
 
 export type TScope = Record<string, string | boolean | number>;
 
@@ -34,7 +34,7 @@ const currentHandlerStackKey = Symbol();
 const pupperAttrRegex = /^x-([^:^.]+)\b/;
 
 type TDirectiveCallback = (
-    node: PupperNode,
+    node: TRendererNodes,
     data: {
         renderer: Renderer;
         scope: TScope;
@@ -52,7 +52,7 @@ export function directive(attribute: TDirectives, callback: TDirectiveCallback) 
  * @param node The node to be evaluated.
  * @returns 
  */
-export function directives(node: PupperNode, scope: TScope) {
+export function directives(node: RendererNode, scope: TScope) {
     let transformedAttributeMap: Record<string, string> = {};
 
     const attributes = node.getAttributesAndProps();
@@ -80,7 +80,7 @@ export function directives(node: PupperNode, scope: TScope) {
         });
 }
 
-export function getDirectiveHandler(node: PupperNode, directive: IDirective, scope: TScope) {
+export function getDirectiveHandler(node: RendererNode, directive: IDirective, scope: TScope) {
     let noop = async () => {};
     let handler = directiveHandler[directive.type] || noop;
 

@@ -10,6 +10,8 @@ import "./core/vdom/directives/EventHandler";
 import "./core/vdom/directives/HTML";
 import "./core/vdom/directives/Component";
 
+import * as Magics from "./model/Magics";
+
 export default class Pupper {
     /**
      * The default component class
@@ -27,6 +29,11 @@ export default class Pupper {
     public static $store: Record<string, any> = {};
 
     /**
+     * A handler for all pupper.js magics.
+     */
+    public static $magics: Record<string, any> = Magics;
+
+    /**
      * Sets a state in the global store.
      * @param name The state key.
      * @param value If set, will change the key value.
@@ -34,7 +41,7 @@ export default class Pupper {
      */
     public static store(name: string, value?: any) {
         return value !== undefined ? this.$store[name] : this.$store[name] = value;
-    };
+    }
     
     /**
      * The Pupper global state.

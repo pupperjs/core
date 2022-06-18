@@ -1,65 +1,110 @@
-import { PupperNode } from "../core/vdom/Node";
+import { RendererNode } from "./vdom/RendererNode";
 import { directives } from "./Directive";
 
 import * as Debugger from "../util/Debugger";
+import { TRendererNodes } from "../core/vdom/Renderer";
 
 export enum ENodeWalkResult {
-    PREVIOUS,
+    REPLACED,
     NEXT,
-    REMOVE
+    REMOVE,
+    SKIP
 }
 
-export async function walk<TNode extends PupperNode | PupperNode[]>(nodes: TNode, scope: any = null): Promise<TNode> {
+interface IWalkResult {
+    result: ENodeWalkResult.NEXT | ENodeWalkResult.REMOVE | ENodeWalkResult.REPLACED,
+    node?: RendererNode | RendererNode[]
+}
+
+interface ISkipWalkResult {
+    result: ENodeWalkResult.SKIP,
+    amount: number
+}
+
+type TWalkResult = ISkipWalkResult | IWalkResult;
+
+let recursionDetector = 0;
+
+/**
+ * Walks through a list of nodes, applying directives to them.
+ * @param nodes The nodes to be walked.
+ * @param scope The scope for this nodes.
+ * @returns 
+ */
+export async function walk<TNode extends TRendererNodes | TRendererNodes[]>(nodes: TNode, scope: any = null): Promise<TNode> {
+    // If it's a single node, walk it
     if (!Array.isArray(nodes)) {
-        return (await walkNode(nodes as PupperNode, scope)).node as TNode;
+        const result = await walkNode(nodes as RendererNode, scope);
+
+        if (result.result === ENodeWalkResult.SKIP) {
+            return nodes;
+        }
+
+        return result.node as TNode;
     }
 
     let count = nodes.length;
     let i = 0;
 
     while(i < count) {
-        const { node, result } = await walkNode(nodes[i], scope);
+        recursionDetector++;
 
+        if (recursionDetector >= 100000) {
+            Debugger.error("pupper.js detected a possible node walking recursion.");
+            break;
+        }
+
+        const currentNode = nodes[i];
+        const walkResult = await walkNode(currentNode, scope);
+
+        // If it's skiping the node
+        if (walkResult.result === ENodeWalkResult.SKIP) {
+            i += Math.max(walkResult.amount, 1);
+        } else
         // If the result is to remove the node
-        if (result === ENodeWalkResult.REMOVE) {
+        if (walkResult.result === ENodeWalkResult.REMOVE) {
             // Remove it and continue
             nodes.splice(i, 1);
             count = nodes.length;
+        } else
+        // If it was replaced
+        if (walkResult.result === ENodeWalkResult.REPLACED) {
+            Debugger.warn("%s %O was replaced with %O", currentNode.tag, currentNode.getAttributesAndProps(), walkResult.node);
 
-            continue;
-        }
+            // Calculate the replacement length
+            const repl = Array.isArray(walkResult.node) ? walkResult.node : [walkResult.node];
 
-        // If it's an array
-        if (Array.isArray(node)) {
-            // Append it to the nodes array
-            nodes.splice(i, 1, ...await walk(node, scope));
+            // Replace it from the nodes array
+            nodes.splice(i, 1, ...repl);
+
+            // Update the total count
             count = nodes.length;
+        } else
+        // If it's an array
+        if (Array.isArray(walkResult.node)) {
+            // Append it to the nodes array
+            nodes.splice(i, 0, ...walkResult.node);
+            count = nodes.length;
+
+            i += walkResult.node.length;
         } else {
-            // If it's going back
-            if (result === ENodeWalkResult.PREVIOUS) {
-                // Parse it again
-                i--;
-                continue;
-            }
-
-            // If the node doesn't exists or is being ignored
-            if (!node.exists() || node.isBeingIgnored()) {
-                i++;
-                continue;
-            }
-
-            nodes[i] = node;
-            i++;          
-        }        
+            // Replace the node with the new one
+            nodes[i++] = walkResult.node;
+        }
     }
+
+    recursionDetector = 0;
 
     return nodes;
 }
 
-async function walkNode(node: PupperNode | undefined, scope: any): Promise<{
-    result: ENodeWalkResult,
-    node?: PupperNode | PupperNode[]
-}> {
+/**
+ * Walks through a single node.
+ * @param node The node to be walked.
+ * @param scope The scope to this node.
+ * @returns 
+ */
+async function walkNode(node: TRendererNodes | undefined, scope: any): Promise<TWalkResult> {
     // If it's an invalid node
     if (!node) {
         // Ignore it
@@ -72,18 +117,17 @@ async function walkNode(node: PupperNode | undefined, scope: any): Promise<{
 
     // Ignore if it's a string
     if (typeof node?.node === "string") {
-        Debugger.warn("node is a plain string");
+        Debugger.warn("\"%s\" is a plain string", node.node);
         Debugger.endGroup();
 
         return {
             node,
             result: ENodeWalkResult.NEXT
         };
-    }
-
+    } else
     // Ignore if it's being ignored
     if (node.isBeingIgnored()) {
-        Debugger.warn("node is being ignored");
+        Debugger.warn("%s is being ignored", node.tag);
         Debugger.endGroup();
 
         return {
@@ -92,32 +136,28 @@ async function walkNode(node: PupperNode | undefined, scope: any): Promise<{
         };
     }
 
+    // Apply all directives for it
     for(let handle of directives(node, scope)) {
         await handle();
     }
 
-    // Set it as non-dirty.
-    node.setDirty(false);
-
     // If node was replaced, stop parsing
     if (node.wasReplaced()) {
-        Debugger.warn("node was replaced with %O", node.getReplacement());
         Debugger.endGroup();
 
         return {
             node: node.getReplacement(),
-            result: ENodeWalkResult.NEXT
+            result: ENodeWalkResult.REPLACED
         };
-    }
-
+    } else
     // If the node was removed, stop parsing
     if (!node.exists()) {
-        Debugger.warn("node was removed");
+        Debugger.warn("%s was removed", node.tag);
         Debugger.endGroup();
 
         return {
-            node,
-            result: ENodeWalkResult.NEXT
+            amount: 1,
+            result: ENodeWalkResult.SKIP
         };
     }
 
@@ -128,10 +168,25 @@ async function walkNode(node: PupperNode | undefined, scope: any): Promise<{
 
     // If it's non-renderable
     if (!node.isRenderable()) {
-        Debugger.warn("node is not renderable");
+        // If it's a $ pupper node
+        if (node.isPupperNode()) {
+            Debugger.warn("found a pupper tag %O, replacing with its children", node);
+            Debugger.endGroup();
 
-        // Allow parsing its children but prevent itself from being rendered.
-        return undefined;
+            return {
+                amount: node.children.length,
+                result: ENodeWalkResult.SKIP
+            };
+        }
+        
+        Debugger.warn("%s is not renderable", node.tag);
+        Debugger.endGroup();
+
+        // Allow parsing its children, but prevent itself from being rendered.
+        return {
+            result: ENodeWalkResult.SKIP,
+            amount: 1
+        };
     }
 
     Debugger.endGroup();

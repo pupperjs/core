@@ -217,6 +217,10 @@ export declare namespace Pug {
             val: string;
             buffer: boolean;
         }
+
+        export declare interface BlockCommentNode extends CommentNode {
+            type: "BlockComment";
+        }
     }
 }
 
@@ -259,6 +263,7 @@ declare module "pug" {
         Pug.Nodes.MixinNode |
         Pug.Nodes.TextNode | 
         Pug.Nodes.CommentNode |
+        Pug.Nodes.BlockCommentNode | 
         Pug.Nodes.CodeNode
     );
 }

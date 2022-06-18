@@ -17,6 +17,18 @@ export type TNodes = PugNodes | CompilerNode | IParserNode;
 
 export class CompilerNode<TNode extends PugNodes = any> extends NodeModel<CompilerNode<any>> {
     /**
+     * Creates a compiler node from a node in our format.
+     * @param node The node to be parsed.
+     * @returns 
+     */
+    public static fromCustomNode<TNode extends IParserNode, TFinalNode = CompilerNode<TPugNodesWithTypes[TNode["type"]]>>(node: TNode, parent: NodeModel): TFinalNode {
+        return Plugin.createNode(
+            this.parseNodeIntoPugNode(node),
+            parent
+        ) as any as TFinalNode;
+    }
+
+    /**
      * Makes a pug attribute node.
      * @param key The attribute name.
      * @param value The attribute value.
@@ -132,6 +144,10 @@ export class CompilerNode<TNode extends PugNodes = any> extends NodeModel<Compil
 
             this.plugin = (parent as AstNode).plugin;
         }
+    }
+
+    public isComment() {
+        return this.pugNode.type === "BlockComment" || this.pugNode.type === "Comment";
     }
 
     /**
