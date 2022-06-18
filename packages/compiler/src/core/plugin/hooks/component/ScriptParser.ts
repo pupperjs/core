@@ -63,7 +63,29 @@ export class ScriptParser {
             this.processComponentCustomEvents();
         }
 
+        if (this.component.style?.length > 0) {
+            this.processComponentStyle();
+        }
+
         return this.sourceFile.getText();
+    }
+
+    private processComponentStyle() {
+        const mounted = this.findOrCreateComponentMethod("mounted");
+
+        mounted.setBodyText(
+            (mounted.hasBody() ? mounted.getBodyText() + "\n" : "") +
+            /*js*/`this.$p__style = document.createElement("style");` +
+            /*js*/`this.$p__style.innerHTML = "${this.component.style.replace(/"/g, "\\\"")}";` +
+            /*js*/`document.head.appendChild(this.$p__style);`
+        );
+
+        const unmounted = this.findOrCreateComponentMethod("unmounted");
+
+        unmounted.setBodyText(
+            (unmounted.hasBody() ? unmounted.getBodyText() + "\n" : "") +
+            /*js*/`this.$p__style.remove();`
+        );
     }
 
     private processComponentData() {

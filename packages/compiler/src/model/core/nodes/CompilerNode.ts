@@ -1,4 +1,4 @@
-import Plugin, { PugNodes, PugNodeAttribute, TPugNodeTypes, TCompilerNode, TPugNodesWithTypes } from "../../../core/Plugin";
+import Plugin, { PugNodes, PugNodeAttribute, TPugNodeTypes, TCompilerNode, TPugNodesWithTypes, TNodeModelByPugNode, TNodeModelByPugNodeType } from "../../../core/Plugin";
 import { AstNode } from "../../../core/plugin/nodes/AstNode";
 import { TagNode } from "../../../core/plugin/nodes/TagNode";
 import { NodeModel } from "../NodeModel";
@@ -155,8 +155,8 @@ export class CompilerNode<TNode extends PugNodes = any> extends NodeModel<Compil
      * @param type The children node type.
      * @returns 
      */
-    public findFirstChildByType(type: PugNodes["type"]) {
-        return this.children.find((child) => child.isType(type));
+    public findFirstChildByType<TType extends TPugNodeTypes>(type: TType): TNodeModelByPugNodeType<TType> {
+        return this.children.find((child) => child.isType(type)) as any;
     }
 
     /**

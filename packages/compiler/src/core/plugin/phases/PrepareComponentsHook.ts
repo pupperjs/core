@@ -1,3 +1,6 @@
+import sass from "sass";
+import postcss, { Rule } from "postcss";
+
 import { IPluginNode } from "../../Plugin";
 import { Hook } from "../Hook";
 import { TagNode } from "../nodes/TagNode";
@@ -31,6 +34,7 @@ export interface IComponent {
 
     template: string;
     script?: string;
+    scope?: string;
     style?: string;
     data?: string;
 
@@ -191,10 +195,6 @@ export class PrepareComponents extends Hook {
             ).parse();
 
             code = `${parsedScript}\n`;
-
-            if (exportedComponent.style) {
-                code += `\n${exportedComponent.style}\n`;
-            }
         }
 
         return code;
@@ -230,6 +230,7 @@ export class PrepareComponents extends Hook {
             },
             template: null,
             script: null,
+            scope: style?.hasAttribute("scoped") ? (Math.random() + 1).toString(36).substring(2) : null,
             style: null,
             data: null,
             exported: isRootComponent
@@ -259,7 +260,27 @@ export class PrepareComponents extends Hook {
 
         // If has a style
         if (style) {
-            console.log(style);
+            component.style = ConsumeChildrenAsString(style);
+
+            // If it's sass or scss
+            if (style.getAttribute("lang") === "sass" || style.getAttribute("lang") === "scss") {
+                component.style = sass.compileString(component.style, {
+                    style: this.compiler.options.debug ? "expanded" : "compressed"
+                }).css;
+            }
+
+            // If it's scoped
+            if (component.scope !== null) {
+                const css = postcss.parse(component.style);
+
+                css.nodes.forEach((node) => {
+                    if (node instanceof Rule) {
+                        node.selector = "[data-" + component.scope + "] " + node.selector;
+                    }
+                });
+
+                component.style = css.toResult().css;
+            }
         }
 
         // If has data
@@ -267,7 +288,7 @@ export class PrepareComponents extends Hook {
             component.data = ConsumeChildrenAsString(data);
         }
 
-        // If has methods
+        // If has implementation
         if (implementation) {
             component.implementation = this.consumeAsImplementation(implementation);
         }
@@ -294,6 +315,23 @@ export class PrepareComponents extends Hook {
 
             const compiler = new PupperCompiler(this.plugin.options);
             compiler.setSharedData(this.plugin.sharedData);
+
+            // If the component is scoped
+            if (component.scope !== null) {
+                let isFirstNode = true;
+
+                // Add the scope to the first component child
+                compiler.plugin.addFilter("parse", (nodes: IPluginNode[]) => {
+                    if (isFirstNode) {
+                        const node = nodes.find((node) => node instanceof TagNode) as TagNode;
+
+                        node.setAttribute("data-" + component.scope, true);
+                        isFirstNode = false;
+                    }
+
+                    return nodes;
+                }, null);
+            }
 
             const templateAsString = compiler.compileTemplate(contents);
             component.template = templateAsString;

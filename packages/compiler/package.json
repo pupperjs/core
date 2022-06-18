@@ -13,11 +13,13 @@
     "watch:ts": "tsc -watch"
   },
   "dependencies": {
+    "postcss": "^8.4.14",
     "pug": "^3.0.2",
     "pug-code-gen": "^2.0.3",
     "pug-error": "^2.0.0",
     "pug-linker": "^4.0.0",
     "pug-parser": "^6.0.0",
+    "sass": "^1.52.3",
     "ts-morph": "^15.1.0"
   },
   "types": "./types/",

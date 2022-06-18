@@ -53,14 +53,14 @@ export class TagNode extends BlockedCompilerNode<Pug.Nodes.TagNode> {
         if (!this.hasAttribute(name)) {
             attr = {
                 name,
-                val: String(value),
+                val: value,
                 mustEscape: false
             };
 
             this.pugNode.attrs.push(attr);
         } else {
             attr = this.getRawAttribute(name);
-            attr.val = String(value);
+            attr.val = value;
         }
 
         return attr;

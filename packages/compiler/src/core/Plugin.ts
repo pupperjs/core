@@ -50,12 +50,12 @@ interface INodeModelPugNodeTypeRelationship extends Record<TPugNodeTypes, TCompi
 /**
  * Retrieves a node model by the pug node type.
  */
-type TNodeModelByPugNodeType<TNode extends TPugNodeTypes> = Pick<INodeModelPugNodeTypeRelationship, TNode>;
+export type TNodeModelByPugNodeType<TNode extends TPugNodeTypes> = INodeModelPugNodeTypeRelationship[TNode];
 
 /**
  * Retrieves the node model by the pug node.
  */
-type TNodeModelByPugNode<TNode extends PugNodes, TNodeType extends TPugNodeTypes = TNode["type"]> = TNodeModelByPugNodeType<TNodeType>;
+export type TNodeModelByPugNode<TNode extends PugNodes, TNodeType extends TPugNodeTypes = TNode["type"]> = TNodeModelByPugNodeType<TNodeType>;
 
 export { PugToken, PugAST, PugNode, PugNodeAttribute, PugNodes, CompilerNode as IPluginNode };
 
