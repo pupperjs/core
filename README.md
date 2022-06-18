@@ -18,7 +18,7 @@ There's some new syntax added to use the reactivity:
 
 # How to use
 You can integrate pupper.js to your application by using one of the given loaders that compiles `.pupper` files into Javascript:
-- [@pupperjs/webpack-loader](https://github.com/pupperjs/webpack-loader)
+- [@pupperjs/webpack-loader](https://github.com/pupperjs/core/packages/webpack-loader)
 
 ---
 
