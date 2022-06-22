@@ -120,6 +120,17 @@ export class TagNode extends BlockedCompilerNode<Pug.Nodes.TagNode> {
     }
 
     /**
+     * Retrieves all attributes as a key-value object.
+     * @returns 
+     */
+    public getMappedAttributes() {
+        return this.getAttributes().reduce((obj, curr) => {
+            obj[curr.name] = curr.val;
+            return obj;
+        }, {} as Record<string, any>);
+    }
+
+    /**
      * Retrieves all raw CSS classes related to this node.
      * @returns 
      */

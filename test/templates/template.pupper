@@ -1,3 +1,5 @@
+import ImportedComponent(from="./ImportedComponent.pupper")
+
 template
     .container-fluid
         //- Stylesheets
@@ -24,8 +26,13 @@ template
                             //- Render the puppies and share the onClickPuppy method with it
                             each index, puppy in puppies
                                 .col-5.mb-5
-                                    .puppy.card.px-0.text-dark(:data-pop="index", :data-id="puppy.id", @click="onClickPuppy(puppy)")
-                                        img.card-img-top(:src="puppy.thumbnail", crossorigin="auto")
+                                    .puppy.card.px-0.text-dark(:data-pop="index", :data-id="puppy.id")
+                                        .img-responsive
+                                            unless puppy.shibe
+                                                .cover
+                                                    a(href="#", @click="replacePuppy(puppy, $event)")|Load a new pupper
+                                            
+                                            img.card-img-top(:src="puppy.thumbnail", crossorigin="auto")
 
                                         .card-header
                                             h5.card-title=puppy.title
@@ -46,12 +53,9 @@ template
                                                             span.badge.badge-info.w-100=property
 
                     div 
-                        |Testing slots: 
+                        h3|Testing slots and components
 
                         slot(name="slot")
-                        slot(name="slot2")
-
-import ImportedComponent(from="./ImportedComponent.pupper")
 
 data
     page = {
@@ -81,15 +85,47 @@ style(lang="scss", scoped)
     .row {
         .puppy {
             box-shadow: 0 0 5px 0 rgba(0, 0, 0, 0.3);
+
+            .img-responsive {
+                position: relative;
+
+                .cover {
+                    display: none;
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: rgba(0, 0, 0, 0.3);
+
+                    a {
+                        color: #fff;
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                    }
+                }
+                
+                &:hover .cover {
+                    display: block;
+                }
+            }
         }
     }
 
 implementation
     //- Declaring methods
-    #onClickPuppy(
-        puppy
-    )
-        alert("You clicked puppy " + puppy.id + "! :D");
+    #replacePuppy(puppy, e)
+        e.preventDefault();
+        
+        if (!puppy.thumbnail.includes("?random"))
+            puppy.thumbnail += "?random";
+        
+        const url = new URL(puppy.thumbnail);
+        url.searchParams.set("u", +new Date());
+
+        puppy.thumbnail = url.toString();
 
     //- Listening to pupper.js events.
     when#created

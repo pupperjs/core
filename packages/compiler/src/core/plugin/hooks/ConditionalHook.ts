@@ -1,5 +1,4 @@
 import { CompilerNode } from "../../../model/core/nodes/CompilerNode";
-import Plugin from "../../Plugin";
 import { Hook } from "../Hook";
 import { ConditionalNode } from "../nodes/ConditionalNode";
 import { TagNode } from "../nodes/TagNode";
@@ -15,7 +14,7 @@ export class ConditionalHook extends Hook {
                 // Replace with a <$ x-if />
                 const conditional = node.replaceWith({
                     type: "Tag",
-                    name: "$p",
+                    name: "$",
                     attributes: {
                         "x-if": node.getProp("test")
                     }
@@ -26,7 +25,7 @@ export class ConditionalHook extends Hook {
                     CompilerNode.fromCustomNode(
                         {
                             type: "Tag",
-                            name: "$p",
+                            name: "$",
                             attributes: {
                                 "x-if-cond": "consequent"
                             },

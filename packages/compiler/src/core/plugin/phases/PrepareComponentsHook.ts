@@ -4,11 +4,11 @@ import postcss, { Rule } from "postcss";
 import { IPluginNode } from "../../Plugin";
 import { Hook } from "../Hook";
 import { TagNode } from "../nodes/TagNode";
-import { ScriptParser } from "../hooks/component/ScriptParser";
+import { ScriptParser } from "./component/ScriptParser";
 import { AstNode } from "../nodes/AstNode";
 import { PupperCompiler } from "../../Compiler";
-import { ConsumeChildrenAsString } from "../../../util/NodeUtil";
-import { ReadBetweenTokens, ReadLinesUntilOutdent, ReadTagWithAttributes } from "../../../util/LexingUtils";
+import { consumeChildrenAsString } from "../../../util/NodeUtil";
+import { readBetweenTokens, readLinesUntilOutdent, readTagWithAttributes } from "../../../util/LexingUtils";
 
 export const DefaultExportSymbol = Symbol("ExportedComponent");
 
@@ -75,7 +75,7 @@ export class PrepareComponents extends Hook {
             }
 
             // Read the implementation contents
-            let implContent = ReadLinesUntilOutdent(lines.slice(codeIndex + 1), identation);
+            let implContent = readLinesUntilOutdent(lines.slice(codeIndex + 1), identation);
             const implContentLines = implContent.split("\n");
 
             for(let implIndex = 0; implIndex < implContentLines.length; implIndex++) {
@@ -87,42 +87,42 @@ export class PrepareComponents extends Hook {
                 }
 
                 // Read the tag
-                const tagData = ReadTagWithAttributes(implContentLines.slice(implIndex));
+                const tagData = readTagWithAttributes(implContentLines.slice(implIndex));
                 let identifier = tagData.tag;
 
                 // If the tag contents (tag + attributes) doesn't end with a dot
                 if (!tagData.content.endsWith(".")) {
-                    this.compiler.debugger.log("\n-------------------------");
-                    this.compiler.debugger.log(tagData.content);
-                    this.compiler.debugger.log("-------------------------\n");
+                    //this.compiler.debugger.log("\n-------------------------");
+                    //this.compiler.debugger.log(tagData.content);
+                    //this.compiler.debugger.log("-------------------------\n");
 
-                    this.compiler.debugger.log("before");
-                    this.compiler.debugger.log(implContent + "\n");
+                    //this.compiler.debugger.log("before");
+                    //this.compiler.debugger.log(implContent + "\n");
 
                     // Add a dot to it
                     implContent = implContent.replace(tagData.content, tagData.content + ".");
 
-                    this.compiler.debugger.log("after");
-                    this.compiler.debugger.log(implContent);
+                    //this.compiler.debugger.log("after");
+                    //this.compiler.debugger.log(implContent);
                 }
 
                 // If it's a "when"
                 if (identifier.startsWith("when")) {
-                    this.compiler.debugger.log(">> replacing \"when\" with \"event-when\" for", identifier);
+                    //this.compiler.debugger.log(">> replacing \"when\" with \"event-when\" for", identifier);
 
                     // Replace it with the internal "p-when"
                     implContent = implContent.replace(identifier, identifier.replace("when", "event-when"));
                 } else
                 // If it's not an event or a listener
                 if (!identifier.startsWith("event") && !identifier.startsWith("listener")) {
-                    this.compiler.debugger.log(">> adding method identifier for", identifier);
+                    //this.compiler.debugger.log(">> adding method identifier for", identifier);
 
                     // Assume it's a method then
                     implContent = implContent.replace(identifier, identifier.replace(identifier, "method" + identifier));
                 }
 
                 // Try matching params against the identifier
-                const matchedParams = ReadBetweenTokens(tagData.attributes, "(", ")");
+                const matchedParams = readBetweenTokens(tagData.attributes, "(", ")");
 
                 // If matched
                 if (matchedParams) {
@@ -130,16 +130,28 @@ export class PrepareComponents extends Hook {
                     const singleParams = matchedParams.matchAll(singleParamRegExp);
 
                     let attributes = tagData.attributes;
+                    let currentIndex = 0;
 
                     // Iterate over all params
                     for(let param of singleParams) {
-                        // If it doesn't have a initializer
+                        // If it already have a initializer
                         if (param[2] !== undefined) {
                             continue;
                         }
 
+                        const identifier = param[0].trim();
+                        const newIdentifier = /*js*/`${identifier} = undefined`;
+
+                        currentIndex = attributes.indexOf(param[0], currentIndex);
+
                         // Strictly add an "undefined" initializer to it
-                        attributes = attributes.replace(param[0].trim(), param[0].trim() + " = undefined");
+                        attributes = (
+                            attributes.substring(0, currentIndex) + 
+                            newIdentifier +
+                            attributes.substring(currentIndex + identifier.length)
+                        );
+
+                        currentIndex += newIdentifier.length;
                     }
 
                     // Replace the attributes with the new ones
@@ -157,7 +169,7 @@ export class PrepareComponents extends Hook {
                 ...implContent.split("\n")
             );
 
-            this.compiler.debugger.log(lines.join("\n"));
+            //this.compiler.debugger.log(lines.join("\n"));
 
             break;
         }
@@ -255,15 +267,16 @@ export class PrepareComponents extends Hook {
 
         // If has a script
         if (script) {
-            component.script = ConsumeChildrenAsString(script);
+            component.script = consumeChildrenAsString(script);
         }
 
         // If has a style
         if (style) {
-            component.style = ConsumeChildrenAsString(style);
+            component.style = consumeChildrenAsString(style);
 
             // If it's sass or scss
             if (style.getAttribute("lang") === "sass" || style.getAttribute("lang") === "scss") {
+                // Compile it
                 component.style = sass.compileString(component.style, {
                     style: this.compiler.options.debug ? "expanded" : "compressed"
                 }).css;
@@ -285,7 +298,7 @@ export class PrepareComponents extends Hook {
 
         // If has data
         if (data) {
-            component.data = ConsumeChildrenAsString(data);
+            component.data = consumeChildrenAsString(data);
         }
 
         // If has implementation
@@ -313,6 +326,7 @@ export class PrepareComponents extends Hook {
                 .map((line) => line.replace(identation, ""))
                 .join("\n");
 
+            // Create a new compiler for the template
             const compiler = new PupperCompiler(this.plugin.options);
             compiler.setSharedData(this.plugin.sharedData);
 
@@ -385,7 +399,7 @@ export class PrepareComponents extends Hook {
                             name: attr.name,
                             initializer: attr.val === "undefined" ? undefined : String(attr.val)
                         })),
-                        body: ConsumeChildrenAsString(child)
+                        body: consumeChildrenAsString(child)
                     });
                 break;
 
@@ -398,7 +412,7 @@ export class PrepareComponents extends Hook {
                             name: attr.name,
                             initializer: attr.val
                         })),
-                        body: ConsumeChildrenAsString(child)
+                        body: consumeChildrenAsString(child)
                     });
                 break;
 
@@ -412,7 +426,7 @@ export class PrepareComponents extends Hook {
                             name: attr.name,
                             initializer: attr.val
                         })),
-                        body: ConsumeChildrenAsString(child),
+                        body: consumeChildrenAsString(child),
                         covers: child.getClasses()
                     });
                 break;

@@ -1,7 +1,8 @@
 import { RendererNode } from "./vdom/RendererNode";
 import { Renderer, TRendererNodes } from "../core/vdom/Renderer";
+import { TReactiveObj } from "./Reactivity";
 
-export type TScope = Record<string, string | boolean | number>;
+export type TScope = Record<string, string | boolean | number | TReactiveObj>;
 
 export type TAttributeVal = string | number | boolean;
 

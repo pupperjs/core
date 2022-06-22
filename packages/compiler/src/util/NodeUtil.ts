@@ -3,7 +3,7 @@ import { inspect } from "util";
 import { NodeModel } from "../model/core/NodeModel";
 import { CompilerNode } from "../model/core/nodes/CompilerNode";
 
-export function InspectNode(node: NodeModel) {
+export function inspectNode(node: NodeModel) {
     const inspected = inspect(node.toPugNode(), false, 99999, false);
     appendFileSync(process.cwd() + "/.test.js", inspected);
 }
@@ -13,7 +13,7 @@ export function InspectNode(node: NodeModel) {
  * @param node The node to be consumed.
  * @returns 
  */
-export function ConsumeChildrenAsString(node: CompilerNode) {
+export function consumeChildrenAsString(node: CompilerNode) {
     node.plugin.parseChildren(node);
     return node.getChildren().map((child) => child.getProp("val")).join("").trimEnd();
 }

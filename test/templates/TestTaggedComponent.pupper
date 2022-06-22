@@ -1,0 +1,6 @@
+template
+    pre
+        span.d-block="number is " + number
+        span.d-block="boolean is " + boolean
+        span.d-block="string is " + string
+        span.d-block="object is " + object

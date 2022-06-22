@@ -2,6 +2,8 @@ import { reactive } from "../model/Reactivity";
 import { Renderer } from "./vdom/Renderer";
 import { Slot } from "./vdom/renderer/Slot";
 
+import type h from "virtual-dom/h";
+
 /**
  * Represents a component's data.
  */
@@ -16,7 +18,9 @@ export interface IComponent<
     /**
      * The function that renders the template HTML.
      */
-    render?: (...args: any[]) => VirtualDOM.VTree;
+    render?: (data: {
+        h: typeof h
+    }) => VirtualDOM.VTree;
 
     /**
      * Any data to be passed to the template.

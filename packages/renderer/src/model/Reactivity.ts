@@ -1,5 +1,5 @@
 type TEffect = () => any | Promise<any>;
-type TReactiveObj = Record<string | number | symbol, any>;
+export type TReactiveObj = Record<string | number | symbol, any>;
 
 const effects = new Map<TReactiveObj, Record<string | symbol, TEffect[]>>();
 let currentEffect: TEffect = null;

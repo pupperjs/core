@@ -178,6 +178,17 @@ export class CompilerNode<TNode extends PugNodes = any> extends NodeModel<Compil
     }
 
     /**
+     * Sets the value of a pug node property.
+     * @param prop The property to change its value
+     * @param value The new property value.
+     * @returns 
+     */
+    public setProp<TKey extends keyof TNode, TValue extends TNode[TKey]>(prop: TKey, value: TValue) {
+        this.pugNode[prop] = value;
+        return this;
+    }
+
+    /**
      * Checks if the pug node has a given property.
      * @param prop The property to be checked.
      * @returns 
@@ -237,11 +248,25 @@ export class CompilerNode<TNode extends PugNodes = any> extends NodeModel<Compil
     }
 
     /**
+     * Removes the current node from the parent.
+     */
+    public delete() {
+        if (this.getIndex() === -1) {
+            throw this.plugin.compiler.makeError("DELETE_FAILED", "Failed to delete a node because it already doesn't exists.", {
+                line: this.getLine(),
+                column: this.getColumn()
+            });
+        }
+
+        this.parent.children.splice(this.getIndex(), 1);
+    }
+
+    /**
      * Replaces all node data with the given ones.
      * @param node The new node to be replaced with
      * @returns 
      */
-    public replaceWith(node: TNodes) {
+    public replaceWith<TNode extends TNodes>(node: TNode): TNode|null {
         // Iterate over all possible children containers
         for(let children of this.parent.getChildrenContainers()) {
             // If this container includes the current node as a children

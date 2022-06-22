@@ -82,14 +82,7 @@ export abstract class NodeModel<TChildren = any> {
      * @returns 
      */
     public getNextNode() {
-        return this.parent.children[this.parent.children.indexOf(this) + 1] || null;
-    }
-
-    /**
-     * Removes the current node from the parent.
-     */
-    public delete() {
-        this.parent.children.splice(this.getIndex(), 1);
+        return this.parent?.children[this.parent.children.indexOf(this) + 1] || null;
     }
 
     /**

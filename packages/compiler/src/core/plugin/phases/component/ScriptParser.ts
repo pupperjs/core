@@ -11,7 +11,7 @@ import {
 
 import Plugin from "../../../Plugin";
 
-import { IComponent } from "../../phases/PrepareComponentsHook";
+import { IComponent } from "../PrepareComponentsHook";
 
 export class ScriptParser {
     protected sourceFile: SourceFile;

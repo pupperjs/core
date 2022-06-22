@@ -15,7 +15,7 @@ export class PugToVirtualDOM {
     constructor(
         protected compiler: PupperCompiler
     ) {
-        this.identation = compiler.plugin.detectIdentation();
+        this.identation = compiler.plugin.detectIdentation() || "\t";
     }
 
     /**
@@ -171,7 +171,7 @@ export class PugToVirtualDOM {
         this.write(`h("${node.name}"`);
 
         // If the node has attributes
-        if (node.attrs.length) {
+        if (node.attrs?.length) {
             this.writeLn(", {");
             this.ident();
 

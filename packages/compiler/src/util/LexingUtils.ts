@@ -1,5 +1,5 @@
 type UpperCaseCharacter = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z";
-type SpecialCharacters = "$" | "{" | "}" | "[" | "]" | "," | "." | ";" | "\"" | "'" | "(" | ")";
+type SpecialCharacters = "$" | "{" | "}" | "[" | "]" | "," | "." | ";" | "\"" | "'" | "(" | ")" | "`" | "´" | "~" | "^";
 type Character = UpperCaseCharacter | Lowercase<UpperCaseCharacter> | SpecialCharacters;
 
 interface ITokenState {
@@ -28,7 +28,7 @@ const CharsToEscape = ["'", '"', '`'];
  * @param end The ending token.
  * @returns The contents between the tokens, or null if the starting token couldn't be found.
  */
-export function ReadBetweenTokens(string: string, start: Character, end: Character, options?: {
+export function readBetweenTokens(string: string, start: Character, end: Character, options?: {
     allowNewLines?: boolean
 }) {
     const startIndex = string.indexOf(start);
@@ -103,7 +103,7 @@ export function ReadBetweenTokens(string: string, start: Character, end: Charact
  * @param ident The detected identation.
  * @returns 
  */
-export function ReadLinesUntilOutdent(lines: string[], ident: string) {
+export function readLinesUntilOutdent(lines: string[], ident: string) {
     let index = 0;
     let line = "";
 
@@ -130,7 +130,7 @@ export function ReadLinesUntilOutdent(lines: string[], ident: string) {
  * @param ident The detected identation.
  * @returns 
  */
-export function ReadLinesUntilIdent(lines: string[], ident: string) {
+export function readLinesUntilIdent(lines: string[], ident: string) {
     let index = 0;
     let line = "";
 
@@ -156,7 +156,7 @@ export function ReadLinesUntilIdent(lines: string[], ident: string) {
  * @param contents The lines to be read.
  * @returns 
  */
-export function ReadTagWithAttributes(contents: string[]|string) {
+export function readTagWithAttributes(contents: string[]|string) {
     const state = {
         index: 0,
         column: 0,
@@ -182,7 +182,7 @@ export function ReadTagWithAttributes(contents: string[]|string) {
         // If has found a "start-attribute" token
         if (state.token === "(") {
             // Read the attributes
-            state.attributes = "(" + ReadBetweenTokens(contents.substring(state.index), "(", ")") + ")";
+            state.attributes = "(" + readBetweenTokens(contents.substring(state.index), "(", ")") + ")";
             state.content += state.attributes;
 
             // Skip the read attributes lines

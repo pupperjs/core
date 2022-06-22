@@ -11,8 +11,8 @@ import { createWriteStream, existsSync, mkdirSync } from "fs";
 import { PugToVirtualDOM } from "./compiler/HTMLToVirtualDOM";
 
 export enum CompilationType {
-    TEMPLATE,
-    COMPONENT
+    TEMPLATE = 0,
+    COMPONENT = 1
 }
 
 export interface ICompilerOptions {

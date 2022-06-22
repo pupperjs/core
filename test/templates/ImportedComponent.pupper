@@ -1,12 +1,15 @@
 import ExportedComponent(from="./ExportedComponent.pupper")
+import TestTaggedComponent(from="./TestTaggedComponent.pupper")
 
 template
     div
         div
-            |This component has an imported component!
-            ExportedComponent()
+            em|The following content must be imported from TestTaggedComponent.pupper:
+            TestTaggedComponent(number=1, boolean=true, string="hello world", object={ a: 1 })
 
-        div.my-3
+        hr.my-5
+
+        div
             ="Also mounted into a slot:"
             slot(name="slot")
 

@@ -4,7 +4,7 @@ import { Hook } from "./plugin/Hook";
 
 import { ConditionalHook } from "./plugin/hooks/ConditionalHook";
 import { PupperToAlpineHook } from "./plugin/hooks/PupperToAlpineHook";
-import { ImportHook } from "./plugin/hooks/ImportHook";
+import { PrepareImportsPhase } from "./plugin/phases/PrepareImportsPhase";
 import { CompilerNode } from "../model/core/nodes/CompilerNode";
 import { StyleAndScriptHook } from "./plugin/hooks/StyleAndScriptHook";
 import { ListenerHook } from "./plugin/hooks/ListenerHook";
@@ -21,6 +21,7 @@ import { PrepareComponents } from "./plugin/phases/PrepareComponentsHook";
 import { CompilationType, PupperCompiler } from "./Compiler";
 
 import lex from "pug-lexer";
+import { ImportHook } from "./plugin/hooks/ImportHook";
 
 type THookConstructor = { new(plugin: Plugin): Hook };
 type THookArray = THookConstructor[];
@@ -65,8 +66,8 @@ export { PugToken, PugAST, PugNode, PugNodeAttribute, PugNodes, CompilerNode as 
 export default class Plugin implements PugPlugin {
     public static Hooks: THookArray = [
         ConditionalHook,
-        PupperToAlpineHook,
         ImportHook,
+        PupperToAlpineHook,
         StyleAndScriptHook,
         ListenerHook
     ];
@@ -76,6 +77,7 @@ export default class Plugin implements PugPlugin {
      * Phases are executed before hooks.
      */
     public static Phases: THookArray = [
+        PrepareImportsPhase,
         PrepareComponents
     ];
 
@@ -157,6 +159,7 @@ export default class Plugin implements PugPlugin {
     public prepareHooks() {
         const hookOrder: string[] = [];
 
+        // Include the phases if not compiling a template
         if (this.compiler.compilationType !== CompilationType.TEMPLATE) {
             Plugin.Phases
                 .map((Phase) => new Phase(this))
@@ -199,7 +202,7 @@ export default class Plugin implements PugPlugin {
                 hook.prepareFilters();
 
                 hookOrder.push(hook.constructor.name);
-            });
+            })
     }
 
     /**
@@ -207,7 +210,7 @@ export default class Plugin implements PugPlugin {
      * @returns 
      */
     public detectIdentation() {
-        return this.compiler.contents.match(/^[\t ]+/m)[0];
+        return this.compiler.contents.match(/^[\t ]+/m)?.[0];
     }
 
     /**
