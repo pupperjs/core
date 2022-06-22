@@ -47,6 +47,13 @@ export interface IComponent<
     mounted?: (this: Component) => any;
 }
 
+/**
+ * Components also are records, because they carry any type of data.
+ */
+export interface Component extends Record<string, any> {
+
+}
+
 export class Component {
     public static create<
         TMethods extends Record<string, CallableFunction>,
@@ -54,6 +61,11 @@ export class Component {
     >(component: IComponent<TData, TMethods>) {
         return new Component(component) as (Component & TMethods);
     }
+
+    /**
+     * The component parent to this component.
+     */
+    public $parent: Component|null = null;
 
     /**
      * The state related to this component.
@@ -75,8 +87,6 @@ export class Component {
      */
     public $refs: Record<string, HTMLElement> = {};
 
-    protected parser: DOMParser;
-
     /**
      * If it's the first time that the component is being rendered.
      */
@@ -85,7 +95,7 @@ export class Component {
     /**
      * The virtual DOM renderer instance.
      */
-    protected renderer = new Renderer(this);
+    public renderer = new Renderer(this);
 
     constructor(
         /**
@@ -137,6 +147,19 @@ export class Component {
         if (this.$component?.created) {
             this.$component.created.call(this);
         }
+    }
+
+    /**
+     * The root component.
+     */
+    public get $root() {
+        let parent = this.$parent;
+
+        while(parent?.$parent !== null) {
+            parent = parent?.$parent;
+        }
+
+        return parent;
     }
 
     /**

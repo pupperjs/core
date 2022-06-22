@@ -22,6 +22,8 @@ export type TRendererNodes = RendererNode | ConditionalNode | LoopNode;
  * Thanks, alpine.js!
  */
 export class Renderer {
+    vnode: string | VirtualDOM.VTree | (string | VirtualDOM.VTree)[];
+    rendererNode: ConditionalNode | LoopNode | RendererNode<VirtualDOM.VText | VirtualDOM.VComment | VirtualDOM.VNode | VirtualDOM.Widget | VirtualDOM.Thunk>;
     /**
      * Creates a renderer node from a virtual DOM node.
      * @param node The original virtual DOM node.
@@ -145,33 +147,40 @@ export class Renderer {
     public rendered = false;
 
     /**
+     * Renders the virtual dom into a virtual DOM node.
+     * @returns 
+     */
+    public async renderToNode() {
+        const tick = this.nextTick(async () => {
+            const vdom = this.component.$component.render({ h });
+            const node = Renderer.createNode(vdom, null, this);
+            this.rendererNode = await walk(node, this.generateScope());
+        });
+
+        await this.waitForTick(tick);
+
+        return this.rendererNode;
+    }
+
+    /**
      * Renders the virtual dom for the first time.
      * @returns 
      */
     public async render() {
-        const tick = this.nextTick(async () => {
-            debug("first render");
+        this.vnode = (await this.renderToNode()).toVNode();
 
-            const vdom = this.component.$component.render({ h });
-            const node = Renderer.createNode(vdom, null, this);
-            const result = await walk(node, this.generateScope());
-            const vnode = result.toVNode();
+        try {
+            this.container = create(this.vnode as VirtualDOM.VNode, {
+                warn: true
+            });
 
-            try {
-                this.container = create(vnode as VirtualDOM.VNode, {
-                    warn: true
-                });
+            this.rendered = true;
 
-                this.rendered = true;
-
-                debug("first render ended");
-            } catch(e) {
-                Debugger.error("an exception ocurred while rendering a component %O", vnode);
-                throw e;
-            }
-        });
-
-        await this.waitForTick(tick);
+            debug("first render ended");
+        } catch(e) {
+            Debugger.error("an exception ocurred while rendering component %O", this.vnode);
+            throw e;
+        }
 
         return this.container;
     }

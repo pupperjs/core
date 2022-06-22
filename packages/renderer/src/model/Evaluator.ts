@@ -33,7 +33,7 @@ export function evaluateString<TExpressionResult = any>(expression: string) {
         func = SafeAsyncFunction(rightSideSafeExpression);
     } catch (err) {
         console.warn("pupper.js warning: invalid expression \"" + rightSideSafeExpression + "\"\n", err);
-        return undefined;
+        return () => rightSideSafeExpression;
     }
 
     evaluatorMemo[expression] = func;

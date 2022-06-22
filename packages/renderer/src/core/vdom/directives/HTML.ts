@@ -2,6 +2,8 @@ import { directive } from "../../../model/Directive";
 import { evaluateLater } from "../../../model/Evaluator";
 import { effect } from "../../../model/Reactivity";
 import { RendererNode } from "../../../model/vdom/RendererNode";
+import Debugger from "../../../util/Debugger";
+
 import dom2vdom from "@pupperjs/dom2vdom";
 
 import h from "virtual-dom/h";
@@ -36,7 +38,8 @@ directive("html", async (node, { expression, scope }) => {
             node.parent.children[insertPosition].replaceWith(replacement);
             node.parent.setDirty();
         } catch(e) {
-            console.warn("[pupper.js] failed to set inner HTML:");
+            console.warn("pupper.js has failed to set inner HTML:");
+            Debugger.warn("scope was %O", scope);
             console.error(e);
         }
     });

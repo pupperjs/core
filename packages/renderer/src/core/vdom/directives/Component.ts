@@ -1,11 +1,8 @@
 import { Component } from "../../../core/Component";
-import { Renderer } from "../../../core/vdom/Renderer";
 import Debugger from "../../../util/Debugger";
-import h from "virtual-dom/h";
 import { directive } from "../../../model/Directive";
 import { evaluateLater } from "../../../model/Evaluator";
 import { effect } from "../../../model/Reactivity";
-import { walk } from "../../../model/NodeWalker";
 
 /**
  * @directive x-component
@@ -23,26 +20,25 @@ directive("component", async (node, { expression, scope }) => {
             // Remove the component attribute
             node.removeAttribute("x-component");
 
-            // Pass all attributes as $props to the scope
-            const newScope = scope;
-
+            // Parse all attributes into the component state
             const attrs = node.getAttributesAndProps();
             for(let key in attrs) {
-                scope[key] = attrs[key];
+                component.$state[key] = evaluateLater(attrs[key]);
+
+                if (component.$state[key] instanceof Function) {
+                    component.$state[key] = await component.$state[key](scope);
+                }
             }
 
+            // Set the parent component
+            component.$parent = scope.$component as Component;
+
+            Debugger.debug("%s scope is %O", expression, component);
+
             // Remove the original attribute from the node
-            node.replaceWith(
-                await walk(
-                    Renderer.createNode(
-                        component.$component.render({ h }),
-                        node.parent,
-                        node.renderer
-                    ), newScope
-                )
-            );
+            node.replaceWith(await component.renderer.renderToNode());
         } catch(e) {
-            console.warn("[pupper.js] failed to bind property:");
+            console.warn("pupper.js has failed to create component:");
             console.error(e);
         }
     });

@@ -67,8 +67,8 @@ export function reactive(obj: TReactiveObj) {
                 return target[property];
             }
 
-            // Ignore functions
-            if (typeof target[property] === "function") {
+            // Ignore functions and proxies
+            if (typeof target[property] === "function" || property === ProxySymbol) {
                 return target[property];
             }
 
