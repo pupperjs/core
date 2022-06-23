@@ -1,6 +1,5 @@
 import { RendererNode } from "../../../model/vdom/RendererNode";
 import { PupperNode } from "../../../model/vdom/PupperNode";
-import { Renderer } from "../Renderer";
 
 export class ConditionalNode extends PupperNode {
     /**
@@ -12,14 +11,6 @@ export class ConditionalNode extends PupperNode {
      * The alternative consequence if the condition is not met.
      */
     declare private alternate: RendererNode[] | undefined;
-
-    constructor(
-        node: VirtualDOM.VNode,
-        parent: RendererNode | null = null,
-        renderer: Renderer
-    ) {
-        super(node, parent, renderer);
-    }
 
     protected initNode() {
         super.initNode();

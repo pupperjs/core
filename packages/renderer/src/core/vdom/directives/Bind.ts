@@ -20,7 +20,7 @@ directive("bind", async (node, { value, expression, scope }) => {
             const evaluated = await evaluate(scope);
 
             // Bind the evaluated value to it
-            node.setAttribute(value, evaluated);
+            node.setAttribute(String(value), evaluated);
         
             debug("binding prop \"%s\" to \"%s\"", value, evaluated);
         

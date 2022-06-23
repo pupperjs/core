@@ -656,7 +656,11 @@ export class RendererNode<TNode extends VirtualDOM.VTree = any> {
             }
         }
 
-        this.element.dispatchEvent(new Event("$created"));
+        const event = new CustomEvent("$created", {
+            detail: this.element
+        });
+
+        this.element.dispatchEvent(event);
     }
 
     /**
@@ -682,11 +686,6 @@ export class RendererNode<TNode extends VirtualDOM.VTree = any> {
         // If it's a plain string
         if (typeof this.node === "string") {
             return this.node;
-        } else
-        // If it's a comment
-        if (this.tag === "!") {
-            this.node = h.c("") as TNode;
-            return this.node;
         }
 
         // If has no $pupper hook yet
@@ -699,6 +698,24 @@ export class RendererNode<TNode extends VirtualDOM.VTree = any> {
                 unhook: () => {
                     this.onElementRemoved();
                 }
+            });
+        }
+
+        // If it's a comment
+        if (this.tag === "!") {
+            this.node = h.c("", this.properties) as TNode;
+            return this.node;
+        }
+
+        // If has a "ref" attribute
+        if (this.hasAttribute("ref")) {
+            // Add a hook to set it into the component
+            // and remove the ref attribute
+            const name = this.getAttribute("ref") as string;
+            this.removeAttribute("ref");
+
+            this.addEventListener("$created", () => {
+                this.renderer.component.$refs[name] = this.element;
             });
         }
 

@@ -14,7 +14,7 @@ export class PupperNode extends RendererNode {
         return false;
     }
 
-    public toVNode() {
+    public toVNode(): VirtualDOM.VTree | string | (VirtualDOM.VTree | string)[] {
         let node: (VirtualDOM.VTree | string)[] = [];
 
         this.children.forEach((child) => {

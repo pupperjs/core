@@ -1,9 +1,9 @@
 import { reactive } from "../model/Reactivity";
 import { Renderer } from "./vdom/Renderer";
-import { Slot } from "./vdom/renderer/Slot";
 
 import type h from "virtual-dom/h";
 import Debugger from "../util/Debugger";
+import { SlotNode } from "./vdom/nodes/SlotNode";
 
 /**
  * Represents a component's data.
@@ -70,7 +70,7 @@ export class Component {
     /**
      * Any slots references.
      */
-    public $slots: Record<string, Slot> = {};
+    public $slots: Record<string, SlotNode> = {};
 
     /**
      * Any templates references.
@@ -80,7 +80,7 @@ export class Component {
     /**
      * Any component references.
      */
-    public $refs: Record<string, HTMLElement> = {};
+    public $refs: Record<string, Element> = {};
 
     /**
      * If it's the first time that the component is being rendered.
@@ -181,24 +181,6 @@ export class Component {
     }
 
     /**
-     * Replaces an element with a comment placeholder element.
-     * @param element The element to be replaced.
-     * @returns 
-     */
-    private replaceWithCommentPlaceholder(element: HTMLElement) {
-        const comment = document.createComment("");
-
-        if (!element.parentElement) {
-            element.replaceWith(comment);
-        } else {
-            element.parentElement.insertBefore(comment, element);
-            element.parentElement.removeChild(element);
-        }
-
-        return comment;
-    }
-
-    /**
      * Renders the template function into a div tag.
      */
     public async render() {
@@ -206,45 +188,9 @@ export class Component {
             this.firstRender = false;
 
             this.$rendered = await this.renderer.render();
-            this.prepareDOM();
         }
 
         return this.$rendered;
-    }
-
-    /**
-     * Prepares the component DOM references.
-     * @todo this is buggy and making the components lose their references.
-     * @todo move this to the vdom parsing instead.
-     */
-    public prepareDOM() {
-        // Find all slots, templates and references
-        const slots = Array.from(this.$rendered.querySelectorAll("slot"));
-        const refs = Array.from(this.$rendered.querySelectorAll("[ref]"));
-
-        // Iterate over all slots
-        for(let slot of slots) {
-            // Replace it with a comment tag
-            const comment = this.replaceWithCommentPlaceholder(slot);
-
-            // If it's a named slot
-            if (slot.hasAttribute("name")) {
-                // Save it
-                this.$slots[slot.getAttribute("name")] = new Slot(comment.childNodes);
-                this.$slots[slot.getAttribute("name")].container = comment;
-            }
-        }
-
-        // Iterate over all references
-        for(let ref of refs) {
-            // Save it
-            this.$refs[ref.getAttribute("ref")] = ref as HTMLElement;
-
-            // Remove the attribute
-            ref.removeAttribute("ref");
-        }
-
-        Debugger.debug("%O slots: %O", this, slots);
     }
 
     /**
@@ -252,12 +198,12 @@ export class Component {
      * @param target The target element where the element will be mounted.
      * @returns 
      */
-    public async mount(target: HTMLElement | Slot | string) {
+    public async mount(target: HTMLElement | SlotNode | string) {
         const rendered = await this.render();
 
         // If it's targeting a slot
-        if (target instanceof Slot) {
-            target.replaceWith(rendered);
+        if (target instanceof SlotNode) {
+            target.replace(rendered);
             this.$container = rendered;
         } else
         // If it's targeting a string (selector)

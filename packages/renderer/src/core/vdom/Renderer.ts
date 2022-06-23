@@ -12,18 +12,28 @@ import Debugger from "../../util/Debugger";
 import { ConditionalNode } from "./nodes/ConditionalNode";
 import { LoopNode } from "./nodes/LoopNode";
 import VNode from "virtual-dom/vnode/vnode";
+import { SlotNode } from "./nodes/SlotNode";
+import { ComponentNode } from "./nodes/ComponentNode";
 
 const debug = Debugger.extend("vdom");
 
-export type TRendererNodes = RendererNode | ConditionalNode | LoopNode;
+export type TRendererNodes = RendererNode | ConditionalNode | LoopNode | ComponentNode | SlotNode;
 
 /**
  * Most of the evaluation functions were taken from alpine.js
  * Thanks, alpine.js!
  */
 export class Renderer {
-    vnode: string | VirtualDOM.VTree | (string | VirtualDOM.VTree)[];
-    rendererNode: ConditionalNode | LoopNode | RendererNode<VirtualDOM.VText | VirtualDOM.VComment | VirtualDOM.VNode | VirtualDOM.Widget | VirtualDOM.Thunk>;
+    /**
+     * The resulting virtual node related to this renderer.
+     */
+    public vnode: string | VirtualDOM.VTree | (string | VirtualDOM.VTree)[];
+
+    /**
+     * The converted virtual node.
+     */
+    private rendererNode: RendererNode<VirtualDOM.VText | VirtualDOM.VComment | VirtualDOM.VNode | VirtualDOM.Widget | VirtualDOM.Thunk>;
+
     /**
      * Creates a renderer node from a virtual DOM node.
      * @param node The original virtual DOM node.
@@ -39,7 +49,15 @@ export class Renderer {
                 } else
                 if ("x-for" in node.properties.attrs) {
                     return new LoopNode(node, parent, renderer);
+                } else
+                if ("x-component" in node.properties.attrs) {
+                    return new ComponentNode(node, parent, renderer);
                 }
+            }
+
+            // If it's a slot node
+            if (node.tagName.toLowerCase() === "slot") {
+                return new SlotNode(node, parent, renderer);
             }
         }
 
@@ -159,7 +177,6 @@ export class Renderer {
 
             this.rendererNode.addEventListener("$created", () => {
                 this.component.$rendered = this.rendererNode.element;
-                this.component.prepareDOM();
             });
         });
 
