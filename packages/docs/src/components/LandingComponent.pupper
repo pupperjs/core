@@ -1,0 +1,23 @@
+template
+    .m-3
+        .jumbotron.text-center.bg-transparent.mb-3
+            h1.display-1|pupper.js
+            p.lead|A pug.js styled reactive framework
+
+        .mx-5.px-5
+            h2.display-4
+                div|Simple,
+                div|semantic and
+                div|complete.
+
+            .mt-3
+
+            |pupper.js is a complete tool for creating applications, websites and systems.
+
+            .mt-3
+
+            |Using the syntax from pug.js
+
+            .mt-3
+
+            a.btn.btn-primary(href="#docs")|Documentation

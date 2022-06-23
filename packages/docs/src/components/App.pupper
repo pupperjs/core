@@ -1,0 +1,18 @@
+import DocsComponent(from="./DocsComponent.pupper")
+import LandingComponent(from="./LandingComponent.pupper")
+
+template
+    div
+        //- Stylesheets
+        link(rel="stylesheet", href="https://cdn.jsdelivr.net/npm/bootswatch@4.5.2/dist/litera/bootstrap.min.css", integrity="sha384-enpDwFISL6M3ZGZ50Tjo8m65q06uLVnyvkFO3rsoW0UC15ATBFz3QEhr3hmxpYsn", crossorigin="anonymous")
+
+        //- If it's loading the docs
+        if isDocs
+            //- Load the docs component
+            DocsComponent
+        else
+            //- Load the landing page component
+            LandingComponent
+
+data
+    isDocs = new URL(window.location.href).hash.includes("docs")

@@ -17,7 +17,8 @@ directive("on", async (node, { value, expression, scope }) => {
 
         debug("will handle event \"%s\" to %O", value, evaluate);
 
-        node.addEventListener(value, async ($event: any) => {
+        // Register the event listener
+        node.addEventListener(value as string, async ($event: any) => {
             debug("handled %s event", value);
             
             const evScope = { ...scope, $event };

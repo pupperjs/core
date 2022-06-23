@@ -3,6 +3,7 @@ import { Renderer } from "./vdom/Renderer";
 import { Slot } from "./vdom/renderer/Slot";
 
 import type h from "virtual-dom/h";
+import Debugger from "../util/Debugger";
 
 /**
  * Represents a component's data.
@@ -47,14 +48,8 @@ export interface IComponent<
     mounted?: (this: Component) => any;
 }
 
-/**
- * Components also are records, because they carry any type of data.
- */
-export interface Component extends Record<string, any> {
-
-}
-
 export class Component {
+    $container: any;
     public static create<
         TMethods extends Record<string, CallableFunction>,
         TData extends Record<string, any>
@@ -97,19 +92,17 @@ export class Component {
      */
     public renderer = new Renderer(this);
 
+    /**
+     * The component container
+     */
+    public $rendered: Element;
+
     constructor(
         /**
          * The component properties.
          */
         public $component: IComponent<any, any>
     ) {
-        // If has methods
-        if ($component?.methods) {
-            for(let method in $component.methods) {
-                this.$state[method] = $component.methods[method];
-            }
-        }
-
         // If has data
         if ($component?.data) {
             if (typeof $component.data === "function") {
@@ -123,6 +116,13 @@ export class Component {
                 }
 
                 this.$state[key] = $component.data[key];
+            }
+        }
+
+        // If has methods
+        if ($component?.methods) {
+            for(let method in $component.methods) {
+                this.$state[method] = $component.methods[method].bind(this);
             }
         }
 
@@ -202,41 +202,49 @@ export class Component {
      * Renders the template function into a div tag.
      */
     public async render() {
-        let renderContainer: Element;
-
         if (this.firstRender) {
             this.firstRender = false;
 
-            renderContainer = await this.renderer.render();
+            this.$rendered = await this.renderer.render();
+            this.prepareDOM();
+        }
 
-            // Find all slots, templates and references
-            const slots = Array.from(renderContainer.querySelectorAll("slot"));
-            const refs = Array.from(renderContainer.querySelectorAll("[ref]"));
+        return this.$rendered;
+    }
 
-            // Iterate over all slots
-            for(let slot of slots) {
-                // Replace it with a comment tag
-                const comment = this.replaceWithCommentPlaceholder(slot);
+    /**
+     * Prepares the component DOM references.
+     * @todo this is buggy and making the components lose their references.
+     * @todo move this to the vdom parsing instead.
+     */
+    public prepareDOM() {
+        // Find all slots, templates and references
+        const slots = Array.from(this.$rendered.querySelectorAll("slot"));
+        const refs = Array.from(this.$rendered.querySelectorAll("[ref]"));
 
-                // If it's a named slot
-                if (slot.hasAttribute("name")) {
-                    // Save it
-                    this.$slots[slot.getAttribute("name")] = new Slot(comment.childNodes);
-                    this.$slots[slot.getAttribute("name")].container = comment;
-                }
-            }
+        // Iterate over all slots
+        for(let slot of slots) {
+            // Replace it with a comment tag
+            const comment = this.replaceWithCommentPlaceholder(slot);
 
-            // Iterate over all references
-            for(let ref of refs) {
+            // If it's a named slot
+            if (slot.hasAttribute("name")) {
                 // Save it
-                this.$refs[ref.getAttribute("ref")] = ref as HTMLElement;
-
-                // Remove the attribute
-                ref.removeAttribute("ref");
+                this.$slots[slot.getAttribute("name")] = new Slot(comment.childNodes);
+                this.$slots[slot.getAttribute("name")].container = comment;
             }
         }
 
-        return renderContainer;
+        // Iterate over all references
+        for(let ref of refs) {
+            // Save it
+            this.$refs[ref.getAttribute("ref")] = ref as HTMLElement;
+
+            // Remove the attribute
+            ref.removeAttribute("ref");
+        }
+
+        Debugger.debug("%O slots: %O", this, slots);
     }
 
     /**
@@ -244,14 +252,25 @@ export class Component {
      * @param target The target element where the element will be mounted.
      * @returns 
      */
-    public async mount(target: HTMLElement | Slot) {
+    public async mount(target: HTMLElement | Slot | string) {
         const rendered = await this.render();
 
         // If it's targeting a slot
         if (target instanceof Slot) {
             target.replaceWith(rendered);
-        } else {
+            this.$container = rendered;
+        } else
+        // If it's targeting a string (selector)
+        if (typeof target === "string") {
+            this.$container = document.querySelector(target);
+            this.$container?.append(rendered);
+        } else
+        // If it's targeint an element
+        if (target instanceof Element) {
+            this.$container = target;
             target.append(rendered);
+        } else {
+            throw new Error("Invalid mounting target " + target);
         }
 
         if ("mounted" in this.$component) {

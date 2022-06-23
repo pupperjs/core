@@ -655,6 +655,8 @@ export class RendererNode<TNode extends VirtualDOM.VTree = any> {
                 this.element.addEventListener(evt, handler);
             }
         }
+
+        this.element.dispatchEvent(new Event("$created"));
     }
 
     /**
@@ -666,6 +668,8 @@ export class RendererNode<TNode extends VirtualDOM.VTree = any> {
                 this.element.removeEventListener(evt, handler);
             }
         }
+
+        this.element.dispatchEvent(new Event("$removed"));
 
         this.element = null;
     }

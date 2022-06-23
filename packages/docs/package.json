@@ -1,0 +1,18 @@
+{
+  "name": "@pupperjs/docs",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "repository": "https://github.com/pupperjs/pupperjs/packages/docs",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "watch": "webpack"
+  },
+  "dependencies": {
+    "@pupperjs/webpack-loader": "file:./../webpack-loader"
+  },
+  "devDependencies": {
+    "copy-webpack-plugin": "^11.0.0",
+    "webpack": "^5.73.0"
+  }
+}

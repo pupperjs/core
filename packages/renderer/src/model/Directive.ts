@@ -15,9 +15,10 @@ interface IProp {
 
 interface IDirective {
     type: TDirectives | null;
-    value: TAttributeVal | null;
+    value?: TAttributeVal | null;
     modifiers: string[];
     expression: string;
+    scope: TScope;
 }
 
 let isDeferringHandlers = false;
@@ -36,12 +37,7 @@ const pupperAttrRegex = /^x-([^:^.]+)\b/;
 
 type TDirectiveCallback = (
     node: TRendererNodes,
-    data: {
-        renderer: Renderer;
-        scope: TScope;
-        expression?: string;
-        value?: string;
-    }
+    data:IDirective
 ) => any;
 
 export function directive(attribute: TDirectives, callback: TDirectiveCallback) {
@@ -140,8 +136,8 @@ function toParsedDirectives(
             value: valueMatch ? valueMatch[1] as any : null,
             modifiers: modifiers.map(i => i.replace(".", "")),
             expression: String(value),
-            original,
-        };
+            original
+        } as any;
     }
 }
 

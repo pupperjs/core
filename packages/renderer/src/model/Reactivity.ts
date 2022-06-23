@@ -4,6 +4,7 @@ export type TReactiveObj = Record<string | number | symbol, any>;
 const effects = new Map<TReactiveObj, Record<string | symbol, TEffect[]>>();
 let currentEffect: TEffect = null;
 
+import { Component } from "../core/Component";
 import Debugger from "../util/Debugger";
 
 const debug = Debugger.extend("reactivity");
@@ -48,13 +49,35 @@ export async function effect(effect: TEffect) {
     };
 }
 
+let recursion: any[] = [];
+
 export function reactive(obj: TReactiveObj) {
+    // Ignore if it's not a valid object
+    if (!obj) {
+        return obj;
+    }
+
     for(let property in obj) {
         // Proxy subobjects
-        if ((typeof obj[property] === "object" || Array.isArray(obj[property])) && obj[ProxySymbol] === undefined) {
+        if (
+            // Do not proxy non-objects
+            (typeof obj[property] === "object" || Array.isArray(obj[property])) && 
+            // Do not proxy components
+            !(obj[property] instanceof Component) &&
+            // Do not proxy already proxied objects
+            obj[ProxySymbol] === undefined
+        ) {
+            if (recursion.includes(obj)) {
+                console.warn("reactive recursion detected:", recursion, obj);
+                continue;
+            }
+
+            recursion.push(obj);
             obj[property] = reactive(obj[property]);
         }
     }
+
+    recursion = [];
 
     obj[ProxySymbol] = true;
 

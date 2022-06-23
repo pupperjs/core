@@ -17,7 +17,7 @@ directive("component", async (node, { expression, scope }) => {
 
             Debugger.warn("component %s resolved to %O", expression, component);
 
-            // Remove the component attribute
+            // Remove the x-component attribute
             node.removeAttribute("x-component");
 
             // Parse all attributes into the component state
@@ -33,10 +33,14 @@ directive("component", async (node, { expression, scope }) => {
             // Set the parent component
             component.$parent = scope.$component as Component;
 
-            Debugger.debug("%s scope is %O", expression, component);
+            console.error(component.renderer.generateScope());
+
+            const rendered = await component.renderer.renderToNode();
+            rendered.setDirty(false);
+            rendered.setChildrenDirty(false);
 
             // Remove the original attribute from the node
-            node.replaceWith(await component.renderer.renderToNode());
+            node.replaceWith(rendered);
         } catch(e) {
             console.warn("pupper.js has failed to create component:");
             console.error(e);

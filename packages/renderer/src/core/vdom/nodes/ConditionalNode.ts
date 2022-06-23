@@ -24,8 +24,15 @@ export class ConditionalNode extends PupperNode {
     protected initNode() {
         super.initNode();
 
-        this.consequent = this.children.find((child) => child.getAttribute("x-if-cond") === "consequent")?.delete().children;
-        this.alternate = this.children.find((child) => child.getAttribute("x-if-cond") === "alternate")?.delete().children;
+        this.consequent = this.children
+            .find((child) => child.getAttribute("x-if-cond") === "consequent")
+                ?.delete()
+                .children;
+        
+        this.alternate = this.children
+            .find((child) => child.getAttribute("x-if-cond") === "alternate")
+                ?.delete()
+                .children;
 
         // If has no consequent
         if (!this.consequent) {

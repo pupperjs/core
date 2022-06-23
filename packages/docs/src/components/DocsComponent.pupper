@@ -1,0 +1,38 @@
+import ComponentsComponent(from="./docs/essentials/ComponentsComponent.pupper")
+
+template
+    .m-3
+        .row
+            //- Sidebar
+            .col-12.col-lg-4
+                each section in sections
+                    div
+                        strong=section.title
+
+                        .list-group
+                            each subSection in section.subSections
+                                .list-group-item.list-group-item-action(
+                                    role="button",
+                                    @click="changeToSection(subSection)"
+                                )=subSection.title
+
+            //- Section content
+            .col-12.col-lg-6
+                slot(name="section")
+data
+    sections = [
+        {
+            title: "Essentials",
+            subSections: [
+                {
+                    title: "Components",
+                    component: ComponentsComponent
+                }
+            ]
+        }
+    ]
+
+implementation
+    #changeToSection(section)
+        console.log(this);
+        section.component.mount(this.$slots.section);

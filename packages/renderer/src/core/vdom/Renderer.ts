@@ -57,7 +57,7 @@ export class Renderer {
     /**
      * The container that will receive the renderer contents.
      */
-    protected container: Element;
+    public container: Element;
 
     /**
      * The rendering queue.
@@ -73,7 +73,7 @@ export class Renderer {
     private inQueue: boolean;
 
     constructor(
-        protected component: Component
+        public component: Component
     ) {
         this.stateStack.push(
             // Globals
@@ -134,7 +134,7 @@ export class Renderer {
      * Generates a state from the state stack.
      * @returns 
      */
-    protected generateScope() {
+    public generateScope() {
         return this.stateStack.reduce((carrier, curr) => {
             for(let key in curr) {
                 carrier[key] = curr[key];
@@ -154,7 +154,13 @@ export class Renderer {
         const tick = this.nextTick(async () => {
             const vdom = this.component.$component.render({ h });
             const node = Renderer.createNode(vdom, null, this);
+
             this.rendererNode = await walk(node, this.generateScope());
+
+            this.rendererNode.addEventListener("$created", () => {
+                this.component.$rendered = this.rendererNode.element;
+                this.component.prepareDOM();
+            });
         });
 
         await this.waitForTick(tick);
@@ -195,7 +201,7 @@ export class Renderer {
             listeners: []
         });
 
-        setTimeout(() => this.maybeStartQueue());
+        window.requestAnimationFrame(() => this.maybeStartQueue());
 
         return tick;
     }
