@@ -1,4 +1,7 @@
 import SyntaxComponent(from="../documentation/essentials/Syntax.md")
+import GettingStarted(from="../documentation/Getting Started.md")
+
+import IconImage(from="url-loader!../img/icon.png")
 
 template
     link(rel="stylesheet", href="https://cdnjs.cloudflare.com/ajax/libs/prism/9000.0.1/themes/prism.min.css")
@@ -7,27 +10,44 @@ template
         .row
             //- Sidebar
             .col-12.col-lg-4.col-xl-3
-                each section in sections
-                    div
-                        strong=section.title
+                img.mb-5(width="25%", :src="icon")
 
-                        .list-group
-                            each subSection in section.subSections
-                                .list-group-item.list-group-item-action(
-                                    role="button",
-                                    @click="changeToSection(subSection)"
-                                )=subSection.title
+                ul
+                    each section in sections
+                        li
+                            unless section.subSections
+                                a.text-dark(href="#", @click="changeToSection({ section }, $event)")
+                                    strong=section.title
+                            else
+                                strong=section.title
+
+                            if section.subSections
+                                .list-group
+                                    each subSection in section.subSections
+                                        .list-group-item.list-group-item-action(
+                                            role="button",
+                                            @click="changeToSection({ section: subSection, parent: section })"
+                                        )=subSection.title
 
             //- Section content
             .col-12.col-lg-6.col-xl-7.mt-3.mt-lg-0
-                slot(name="section")
+                div
+                    slot(name="section")
 
 data
+    icon = IconImage
     sections = [
         {
+            id: "getting-started",
+            title: "Getting Started",
+            component: GettingStarted
+        },
+        {
+            id: "essentials",
             title: "Essentials",
             subSections: [
                 {
+                    id: "syntax",
                     title: "Syntax",
                     component: SyntaxComponent
                 }
@@ -36,8 +56,44 @@ data
     ]
 
 implementation
-    #changeToSection(section)
+    #changeToSection(data, e = undefined)
+        e?.preventDefault();
+
         const template = document.createElement("template");
-        template.innerHTML = section.component;
+        template.innerHTML = data.section.component;
 
         this.$slots.section.replace(template.content);
+
+        let hash = "#/docs/";
+
+        if (data.parent) {
+            hash += data.parent.id + "/";
+        }
+
+        hash += data.section.id;
+
+        window.location.hash = hash;
+
+    when#mounted
+        this.$nextTick(() => {
+            const sectionParts = window.location.hash.split("docs/")?.[1].split("/");
+
+            let currentSection = this.sections.find((section) => section.id === sectionParts.shift());
+            let part = 0;
+
+            while(part <= sectionParts.length) {
+                const currentPart = sectionParts[part++];
+
+                if (currentSection.id !== currentPart) {
+                    currentSection = currentSection?.subSections.find((s) => s.id === currentPart);
+
+                    if (!currentSection) {
+                        break;
+                    }
+                }
+            }
+
+            if (currentSection) {
+                this.changeToSection(currentSection);
+            }
+        });

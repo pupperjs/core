@@ -17,6 +17,7 @@
     "copy-webpack-plugin": "^11.0.0",
     "deepmerge": "^4.2.2",
     "escape-html": "^1.0.3",
+    "file-loader": "^6.2.0",
     "hast-util-sanitize": "^4.0.0",
     "html-loader": "^3.1.2",
     "prismjs": "^1.28.0",
@@ -28,6 +29,7 @@
     "remark-twemoji": "^0.1.1",
     "twemoji": "^14.0.2",
     "unist-util-visit": "^4.1.0",
+    "url-loader": "^4.1.1",
     "webpack": "^5.73.0"
   }
 }

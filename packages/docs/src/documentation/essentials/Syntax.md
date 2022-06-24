@@ -17,7 +17,7 @@ Normal JavaScript works fine with components:
 template
     body(class=authenticated ? "authed" : "anon")
 data
-    authed = false
+    authenticated = false
 ```
 
 ### Multi-line Attributes
