@@ -1,10 +1,12 @@
-import ComponentsComponent(from="./docs/essentials/ComponentsComponent.pupper")
+import SyntaxComponent(from="../documentation/essentials/Syntax.md")
 
 template
+    link(rel="stylesheet", href="https://cdnjs.cloudflare.com/ajax/libs/prism/9000.0.1/themes/prism.min.css")
+
     .m-3
         .row
             //- Sidebar
-            .col-12.col-lg-4
+            .col-12.col-lg-4.col-xl-3
                 each section in sections
                     div
                         strong=section.title
@@ -17,16 +19,17 @@ template
                                 )=subSection.title
 
             //- Section content
-            .col-12.col-lg-6
+            .col-12.col-lg-6.col-xl-7.mt-3.mt-lg-0
                 slot(name="section")
+
 data
     sections = [
         {
             title: "Essentials",
             subSections: [
                 {
-                    title: "Components",
-                    component: ComponentsComponent
+                    title: "Syntax",
+                    component: SyntaxComponent
                 }
             ]
         }
@@ -34,5 +37,7 @@ data
 
 implementation
     #changeToSection(section)
-        console.log(this);
-        section.component.mount(this.$slots.section);
+        const template = document.createElement("template");
+        template.innerHTML = section.component;
+
+        this.$slots.section.replace(template.content);

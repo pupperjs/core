@@ -14,5 +14,16 @@ template
             //- Load the landing page component
             LandingComponent
 
+style(lang="sass")
+    .hint {
+        padding: 1rem;
+        border-radius: 0.25rem;
+        
+        &.tip {
+            background-color: var(--info);
+            color: #fff;
+        }
+    }
+
 data
     isDocs = new URL(window.location.href).hash.includes("docs")

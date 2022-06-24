@@ -5,14 +5,29 @@
   "repository": "https://github.com/pupperjs/pupperjs/packages/docs",
   "license": "MIT",
   "private": true,
+  "type": "module",
   "scripts": {
-    "watch": "webpack"
+    "watch": "node ./builder"
   },
   "dependencies": {
-    "@pupperjs/webpack-loader": "file:./../webpack-loader"
+    "@pupperjs/webpack-loader": "file:./../webpack-loader",
+    "remark-html": "^15.0.1"
   },
   "devDependencies": {
     "copy-webpack-plugin": "^11.0.0",
+    "deepmerge": "^4.2.2",
+    "escape-html": "^1.0.3",
+    "hast-util-sanitize": "^4.0.0",
+    "html-loader": "^3.1.2",
+    "prismjs": "^1.28.0",
+    "remark": "^14.0.2",
+    "remark-codesandbox": "^0.10.1",
+    "remark-gfm": "^3.0.1",
+    "remark-hint": "^1.0.10",
+    "remark-loader": "^5.0.0",
+    "remark-twemoji": "^0.1.1",
+    "twemoji": "^14.0.2",
+    "unist-util-visit": "^4.1.0",
     "webpack": "^5.73.0"
   }
 }
