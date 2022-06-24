@@ -177,6 +177,11 @@ export class Renderer {
 
             this.rendererNode.addEventListener("$created", () => {
                 this.component.$rendered = this.rendererNode.element;
+
+                // Call the mounted function in the component
+                if ("mounted" in this.component.$component) {
+                    this.component.$component.mounted.call(this.component);
+                }
             });
         });
 

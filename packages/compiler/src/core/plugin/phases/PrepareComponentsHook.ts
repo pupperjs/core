@@ -86,12 +86,12 @@ export class PrepareComponents extends Hook {
                     continue;
                 }
 
-                // Read the tag
-                const tagData = readTagWithAttributes(implContentLines.slice(implIndex));
-                let identifier = tagData.tag;
+                // Parse the tag
+                const parsedTag = readTagWithAttributes(implContentLines.slice(implIndex));
+                let identifier = parsedTag.tag;
 
                 // If the tag contents (tag + attributes) doesn't end with a dot
-                if (!tagData.content.endsWith(".")) {
+                if (!parsedTag.content.endsWith(".")) {
                     //this.compiler.debugger.log("\n-------------------------");
                     //this.compiler.debugger.log(tagData.content);
                     //this.compiler.debugger.log("-------------------------\n");
@@ -100,7 +100,7 @@ export class PrepareComponents extends Hook {
                     //this.compiler.debugger.log(implContent + "\n");
 
                     // Add a dot to it
-                    implContent = implContent.replace(tagData.content, tagData.content + ".");
+                    implContent = implContent.replace(parsedTag.content, parsedTag.content + ".");
 
                     //this.compiler.debugger.log("after");
                     //this.compiler.debugger.log(implContent);
@@ -122,26 +122,29 @@ export class PrepareComponents extends Hook {
                 }
 
                 // Try matching params against the identifier
-                const matchedParams = readBetweenTokens(tagData.attributes, "(", ")");
+                const matchedParams = readBetweenTokens(parsedTag.attributes, "(", ")");
 
                 // If matched
                 if (matchedParams) {
                     // Extract all single params
                     const singleParams = matchedParams.matchAll(singleParamRegExp);
 
-                    let attributes = tagData.attributes;
+                    let attributes = parsedTag.attributes;
                     let currentIndex = 0;
 
                     // Iterate over all params
                     for(let param of singleParams) {
                         // If it already have a initializer
                         if (param[2] !== undefined) {
+                            // Skip it
+                            currentIndex += param[0].length;
                             continue;
                         }
 
-                        const identifier = param[0].trim();
+                        const identifier = param[0];
                         const newIdentifier = /*js*/`${identifier} = undefined`;
 
+                        // Calculate the position for the last replacement
                         currentIndex = attributes.indexOf(param[0], currentIndex);
 
                         // Strictly add an "undefined" initializer to it
@@ -155,7 +158,7 @@ export class PrepareComponents extends Hook {
                     }
 
                     // Replace the attributes with the new ones
-                    implContent = implContent.replace(tagData.attributes, attributes);
+                    implContent = implContent.replace(parsedTag.attributes, attributes);
 
                     // Skip the params lines
                     implLine += matchedParams.split("\n").length;
@@ -164,8 +167,11 @@ export class PrepareComponents extends Hook {
 
             // Replace the implementation contents
             lines.splice(
+                // From the first line of implementation code
                 codeIndex + 1,
-                implContentLines.length,
+                // To the last line of implementation code
+                implContentLines.length - 1,
+                // Insering the new implementation code
                 ...implContent.split("\n")
             );
 

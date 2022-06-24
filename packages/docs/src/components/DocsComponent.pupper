@@ -1,38 +1,77 @@
-import SyntaxComponent(from="../documentation/essentials/Syntax.md")
-import GettingStarted(from="../documentation/Getting Started.md")
-
 import IconImage(from="url-loader!../img/icon.png")
 
 template
+    //- Theme for prism.js (syntax highlighting)
     link(rel="stylesheet", href="https://cdnjs.cloudflare.com/ajax/libs/prism/9000.0.1/themes/prism.min.css")
 
     .m-3
         .row
             //- Sidebar
             .col-12.col-lg-4.col-xl-3
-                img.mb-5(width="25%", :src="icon")
+                #docs-menu
+                    img.mb-5(width="25%", :src="icon")
 
-                ul
-                    each section in sections
-                        li
-                            unless section.subSections
-                                a.text-dark(href="#", @click="changeToSection({ section }, $event)")
-                                    strong=section.title
-                            else
-                                strong=section.title
+                    ul
+                        each section in sections
+                            li
+                                unless section.subSections
+                                    a.text-dark(href="#", @click="changeToSection({ section }, $event)")
+                                        strong=section.title
+                                else
+                                    a.text-dark(href="#")
+                                        strong=section.title
 
-                            if section.subSections
-                                .list-group
-                                    each subSection in section.subSections
-                                        .list-group-item.list-group-item-action(
-                                            role="button",
-                                            @click="changeToSection({ section: subSection, parent: section })"
-                                        )=subSection.title
+                                if section.subSections
+                                    ul
+                                        each subSection in section.subSections
+                                            li
+                                                a.text-dark(href="#" @click="changeToSection({ section: subSection, parent: section }, $event)")
+                                                    =subSection.title
 
             //- Section content
             .col-12.col-lg-6.col-xl-7.mt-3.mt-lg-0
-                div
+                .p-3
                     slot(name="section")
+
+style(lang="sass")
+    #docs-menu {
+        position: sticky;
+        top: 1rem;
+        
+        ul {
+            padding: 0;
+            margin: 0;
+
+            li {
+                list-style: none;
+
+                a {
+                    padding: 0.25rem;
+                    width: 100%;
+                    display: block;
+                }
+
+                ul {
+                    margin-top: 0.25rem;
+                    margin-left: 0.5rem;
+                }
+
+                &:not(:last-child) {
+                    margin-bottom: 0.25rem;
+                }
+            }
+        }
+    }
+
+    .hint {
+        padding: 1rem;
+        border-radius: 0.25rem;
+        
+        &.tip {
+            background-color: var(--info);
+            color: #fff;
+        }
+    }
 
 data
     icon = IconImage
@@ -40,7 +79,18 @@ data
         {
             id: "getting-started",
             title: "Getting Started",
-            component: GettingStarted
+            subSections: [
+                {
+                    id: "introduction",
+                    title: "Introduction",
+                    component: require("../documentation/getting-started/Introduction.md").default
+                },
+                {
+                    id: "quick-start",
+                    title: "Quick Start",
+                    component: require("../documentation/getting-started/Quick Start.md").default
+                }
+            ]
         },
         {
             id: "essentials",
@@ -49,14 +99,24 @@ data
                 {
                     id: "syntax",
                     title: "Syntax",
-                    component: SyntaxComponent
+                    component: require("../documentation/essentials/Syntax.md").default
+                },
+                {
+                    id: "conditional-rendering",
+                    title: "Conditional Rendering",
+                    component: require("../documentation/essentials/Conditional Rendering.md").default
+                },
+                {
+                    id: "list-rendering",
+                    title: "List Rendering",
+                    component: require("../documentation/essentials/List Rendering.md").default
                 }
             ]
         }
     ]
 
 implementation
-    #changeToSection(data, e = undefined)
+    #changeToSection(data, e)
         e?.preventDefault();
 
         const template = document.createElement("template");
@@ -76,24 +136,41 @@ implementation
 
     when#mounted
         this.$nextTick(() => {
-            const sectionParts = window.location.hash.split("docs/")?.[1].split("/");
+            const sectionParts = window.location.hash?.split("docs/")?.[1]?.split("/");
 
-            let currentSection = this.sections.find((section) => section.id === sectionParts.shift());
-            let part = 0;
+            let currentSection;
+            let parentSection;
 
-            while(part <= sectionParts.length) {
-                const currentPart = sectionParts[part++];
+            if (sectionParts) {
+                const firstPart = sectionParts?.shift();
 
-                if (currentSection.id !== currentPart) {
-                    currentSection = currentSection?.subSections.find((s) => s.id === currentPart);
+                parentSection = this.sections.find((section) => section.id === firstPart);
+                currentSection = parentSection;
+                let part = 0;
 
-                    if (!currentSection) {
-                        break;
+                while(part <= sectionParts.length - 1) {
+                    const currentPart = sectionParts[part++];
+
+                    if (currentSection.id !== currentPart) {
+                        currentSection = currentSection.subSections?.find((s) => s.id === currentPart);
+
+                        if (!currentSection) {
+                            break;
+                        }
                     }
                 }
             }
 
+            if (!currentSection) {
+                parentSection = this.sections.find((section) => section.id === "getting-started");
+                currentSection = parentSection.subSections.find((section) => section.id === "introduction")
+            }
+
+            if (currentSection === parentSection) {
+                parentSection = undefined;
+            }
+
             if (currentSection) {
-                this.changeToSection(currentSection);
+                this.changeToSection({ parent: parentSection, section: currentSection });
             }
         });

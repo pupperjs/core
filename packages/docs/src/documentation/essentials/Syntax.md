@@ -3,6 +3,10 @@ pupper syntax is based in [pug](https://pugjs.org/api/getting-started.html).
 
 <br/>
 
+---
+
+<br/>
+
 ### Attributes
 It is very semantical and natural to write in pupper.
 Tag and attributes look similar to HTML, but with commas separating the attributes. Their values are just regular JavaScript.
@@ -19,6 +23,12 @@ template
 data
     authenticated = false
 ```
+
+<br/>
+
+---
+
+<br/>
 
 ### Multi-line Attributes
 If you have many attributes, you can also spread them across many lines:

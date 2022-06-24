@@ -1,7 +1,7 @@
 {
     "$schema": "https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/nodemon.json",
-    "watch": ["./src/*"],
-    "ext": "js,ts",
+    "watch": ["./packages/**/out"],
+    "ext": "js",
     "exec": "webpack",
     "env": {
         "NODE_OPTIONS": "-r source-map-support/register"

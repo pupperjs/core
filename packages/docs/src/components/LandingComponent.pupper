@@ -20,4 +20,4 @@ template
 
             .mt-3
 
-            a.btn.btn-primary(href="#docs")|Documentation
+            a.btn.btn-primary(href="#/docs")|Documentation

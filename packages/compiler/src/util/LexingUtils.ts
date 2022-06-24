@@ -104,22 +104,27 @@ export function readBetweenTokens(string: string, start: Character, end: Charact
  * @returns 
  */
 export function readLinesUntilOutdent(lines: string[], ident: string) {
-    let index = 0;
-    let line = "";
+    let line = 0;
+    let lineContents = "";
 
     let content = "";
 
     do {
-        line = lines[index];
+        lineContents = lines[line];
 
-        if (line === undefined) {
+        if (lineContents === undefined) {
             break;
         }
 
-        content += line + "\n";
+        // If the line isn't idented and isn't empty
+        if (!lineContents.startsWith(ident) && lineContents.trim().length > 0) {
+            break;
+        }
 
-        index++;
-    } while (line.length === 0 || line.startsWith(ident));
+        content += lineContents + "\n";
+
+        line++;
+    } while (true);
 
     return content;
 }

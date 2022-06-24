@@ -2,7 +2,7 @@ import { Hook } from "../Hook";
 
 export class StyleAndScriptHook extends Hook {
     public beforeStart(code: string) {
-        const matches = code.matchAll(/^\s*(script|style).*[^.]$/gm);
+        const matches = code.matchAll(/^\s*(?<tag>script|style).*[^.]$/gm);
 
         // Add dots to ending "script" and "style" tags
         for(let match of matches) {

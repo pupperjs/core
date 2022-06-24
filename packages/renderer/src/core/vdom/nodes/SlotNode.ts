@@ -30,7 +30,26 @@ export class SlotNode extends RendererNode<VirtualDOM.VNode> {
      * Replaces the slot contents with a given element.
      * @param replacement The element to replace this slot's content.
      */
-    public replace(replacement: Element) {
+    public replace(replacement: Element|DocumentFragment) {
+        // If it's a template
+        if (replacement instanceof HTMLTemplateElement) {
+            replacement = replacement.content;
+        }
+
+        // If it's a document fragment
+        if (replacement instanceof DocumentFragment) {
+            // If has more than one child
+            if (replacement.childElementCount > 1) {
+                // Append it to a div then
+                const div = document.createElement("div");
+                div.appendChild(replacement);
+
+                replacement = div;
+            } else {
+                replacement = replacement.firstElementChild;
+            }
+        }
+
         this.element.replaceWith(replacement);
         this.element = replacement;
     }

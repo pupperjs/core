@@ -15,6 +15,7 @@ import "prismjs/components/prism-pug.js";
 import "prismjs/components/prism-javascript.js";
 import "prismjs/components/prism-sass.js";
 import "prismjs/components/prism-typescript.js";
+import "prismjs/components/prism-bash.js";
 
 import webpack from "webpack";
 

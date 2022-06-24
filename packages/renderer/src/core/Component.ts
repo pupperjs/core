@@ -2,7 +2,6 @@ import { reactive } from "../model/Reactivity";
 import { Renderer } from "./vdom/Renderer";
 
 import type h from "virtual-dom/h";
-import Debugger from "../util/Debugger";
 import { SlotNode } from "./vdom/nodes/SlotNode";
 
 /**
@@ -217,10 +216,6 @@ export class Component {
             target.append(rendered);
         } else {
             throw new Error("Invalid mounting target " + target);
-        }
-
-        if ("mounted" in this.$component) {
-            this.$component.mounted.call(this);
         }
 
         return rendered;
