@@ -1,13 +1,10 @@
-## Syntax
-pupper syntax is based in [pug](https://pugjs.org/api/getting-started.html).
-
+## Attributes
 <br/>
 
 ---
 
 <br/>
 
-### Attributes
 It is very semantical and natural to write in pupper.
 Tag and attributes look similar to HTML, but with commas separating the attributes. Their values are just regular JavaScript.
 

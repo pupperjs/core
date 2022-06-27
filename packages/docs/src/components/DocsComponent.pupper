@@ -14,12 +14,7 @@ template
                     ul
                         each section in sections
                             li
-                                unless section.subSections
-                                    a.text-dark(href="#", @click="changeToSection({ section }, $event)")
-                                        strong=section.title
-                                else
-                                    a.text-dark(href="#")
-                                        strong=section.title
+                                strong=section.title
 
                                 if section.subSections
                                     ul
@@ -45,7 +40,7 @@ style(lang="sass")
             li {
                 list-style: none;
 
-                a {
+                a, strong {
                     padding: 0.25rem;
                     width: 100%;
                     display: block;
@@ -96,20 +91,37 @@ data
             id: "essentials",
             title: "Essentials",
             subSections: [
+                
+            ]
+        },
+        {
+            id: "syntax",
+            title: "Syntax",
+            subSections: [
                 {
-                    id: "syntax",
-                    title: "Syntax",
-                    component: require("../documentation/essentials/Syntax.md").default
+                    id: "tags",
+                    title: "Tags",
+                    component: require("../documentation/syntax/Tags.md").default
                 },
                 {
-                    id: "conditional-rendering",
-                    title: "Conditional Rendering",
-                    component: require("../documentation/essentials/Conditional Rendering.md").default
+                    id: "plain-text",
+                    title: "Plain Text",
+                    component: require("../documentation/syntax/Plain Text.md").default
                 },
                 {
-                    id: "list-rendering",
-                    title: "List Rendering",
-                    component: require("../documentation/essentials/List Rendering.md").default
+                    id: "attributes",
+                    title: "Attributes",
+                    component: require("../documentation/syntax/Attributes.md").default
+                },
+                {
+                    id: "conditionals",
+                    title: "Conditionals",
+                    component: require("../documentation/syntax/Conditionals.md").default
+                },
+                {
+                    id: "lists",
+                    title: "Lists",
+                    component: require("../documentation/syntax/Lists.md").default
                 }
             ]
         }

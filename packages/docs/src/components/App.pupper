@@ -15,10 +15,15 @@ template
             LandingComponent
 
 data
-    isDocs = window.location.hash.includes("docs")
+    isDocs = false
 
 implementation
+    when#created
+        this.isDocs = window.location.hash.includes("docs");
+        
     when#mounted
         window.addEventListener("hashchange", () => {
+            // @todo this is not working
+            // probably a bug with the reactivity between a conditional and components
             this.isDocs = window.location.hash.includes("docs");
         });

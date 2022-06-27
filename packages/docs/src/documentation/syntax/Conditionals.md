@@ -1,4 +1,4 @@
-## Conditional Rendering
+## Conditionals
 <br/>
 
 ---

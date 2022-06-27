@@ -1,5 +1,4 @@
-## List Rendering
-
+## Lists
 <br/>
 
 ---
